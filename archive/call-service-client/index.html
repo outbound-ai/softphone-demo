@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="style.css">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+        <script src="mulaw.js"></script>
+        <script src="app.js"></script>
+        <script src="bytes.js"></script>
+    </head>
+    <body>
+        <div id="controls">
+            <label>JobId
+                <input id="jobId"/>
+            </label>
+            <button id="connect" onclick="handleConnectAsnyc()">connect</button>
+            <button id="disconnect" onclick="handleDisconnect()">disconnect</button>
+        </div>
+        
+        <div id="transcript"></div>
+
+        <div id="controls">
+            <label>Message
+                <input onkeyup="handleMessageChanged(event)"/>
+            </label>
+            <button id="send" onclick="handleSendMessageClicked(event)">send</button>
+        </div>
+    </body>
+</html>

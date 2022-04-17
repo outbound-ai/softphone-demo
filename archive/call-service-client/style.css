@@ -1,0 +1,26 @@
+#controls {
+    margin: 20px 0;
+}
+
+#controls input {
+    width: 300px;
+}
+
+#controls button {
+    width: 100px;
+    display: none;
+}
+
+#transcript {
+    padding: 10px;
+    border: 1px solid gray;
+    width: 800px;
+    height: 500px;
+    overflow-y: auto;
+}
+
+#transcript .message {
+    border: 1px solid gray;
+    padding: 5px;
+    margin: 10px 0;
+}
