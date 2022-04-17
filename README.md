@@ -1,0 +1,2 @@
+# Outbound.Calls.Softphone.Demo
+A demonstration of using the [Outbound.Calls.Softphone](https://github.com/outbound-ai/Oubound.Calls.Softphone) package with the [create-react-app](https://create-react-app.dev/) project template.
