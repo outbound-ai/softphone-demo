@@ -1,0 +1,38 @@
+#softphone {
+  margin: 25px;
+}
+
+#softphone input {
+  margin: 0 0 0 10px;
+}
+
+#softphone #transcript {
+  padding: 10px;
+  border: 1px solid gray;
+  width: 800px;
+  height: 500px;
+  overflow-y: auto;
+}
+
+#softphone #transcript .message {
+  border: 1px solid gray;
+  padding: 5px;
+  margin: 10px 0;
+}
+
+#softphone #controls {
+  margin: 20px 0;
+}
+
+#softphone #controls input {
+  width: 300px;
+}
+
+#softphone #controls button {
+  width: 100px;
+  margin: 10px 0 0 10px;
+}
+
+#softphone #controls button.dtmf {
+  width: 50px;
+}
