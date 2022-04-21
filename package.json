@@ -1,8 +1,9 @@
 {
-  "name": "outbound-calls-softphone-demo",
+  "name": "@outbound-ai/softphone-demo",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@outbound-ai/softphone": "file:../softphone",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.1.0",
     "@testing-library/user-event": "^13.5.0",
@@ -10,7 +11,6 @@
     "@types/node": "^16.11.27",
     "@types/react": "^18.0.5",
     "@types/react-dom": "^18.0.1",
-    "outbound-calls-softphone": "file:../Outbound.Calls.Softphone",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-scripts": "5.0.1",

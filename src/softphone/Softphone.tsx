@@ -1,6 +1,6 @@
 import './softphone.css';
 import { useState, useEffect, MouseEvent } from 'react';
-import CallService, { Conversation } from "outbound-calls-softphone";
+import CallService, { Conversation } from "@outbound-ai/softphone";
 
 const callService = new CallService("ws://localhost:5001");
 
@@ -10,6 +10,41 @@ callService.onLog = (message: string) => {
 
 function App() {
   const [_conversation, _setConversation] = useState<Conversation | null>(null);
+  const [_connected, _setConnected] = useState(false);
+
+  // The call can be disconnected at any time. We need to observe this
+  // property of the conversation and bind it into the React component 
+  // state.
+  useEffect(() => {
+    if (_conversation) {
+      const interval = setInterval(() => {
+        if (_conversation.connected !== _connected) {
+          _setConnected(_conversation.connected);
+        }
+      }, 100);
+
+      return () => {
+        clearInterval(interval);
+      }
+    }
+  }, [_conversation, _connected]);
+
+  // New messages can arrive at any time.
+  useEffect(() => {
+    if (_conversation) {
+      _conversation.onTranscriptAvailable = (participant, text) => {
+        const transcript = document.getElementById("transcript");
+
+        if (transcript) {
+          const container = document.createElement("div");
+          transcript.appendChild(container);
+          const message = document.createElement("div");
+          message.innerText = `${participant}: ${text}`;
+          container.appendChild(message);
+        }
+      };
+    }
+  }, [_conversation]);
 
   async function handleClickConnectAsync(event: MouseEvent) {
     if (_conversation == null) {
@@ -27,34 +62,40 @@ function App() {
   function handleClickTakeOver(event: MouseEvent) {
     const element = event.target as HTMLInputElement;
     element.hidden = true;
-    unmute();
+
+    if (_conversation) {
+      _conversation.unmute();
+    }
   }
 
   function handleClickMute(event: MouseEvent) {
-    if (_conversation && _conversation.muted) {
-      unmute()
+    if (_conversation) {
+      if (_conversation.muted) {
+        _conversation.unmute();
+      }
+      else {
+        _conversation.mute();
+      }
     }
-    else {
-      mute();
-    }
-  }
-
-  function unmute() {
-  }
-
-  function mute() {
   }
 
   function handleClickSendMessage() {
     const input = document.getElementById("message") as HTMLInputElement;
-    console.log(input.value);
+
+    if (_conversation) {
+      _conversation.sendSynthesizedSpeech(input.value);
+    }
+
     input.value = "";
   }
 
   function handleClickSendDtmfCode(event: MouseEvent) {
     const target = event.target as HTMLButtonElement;
     const digit = target.dataset.digit;
-    console.log(digit);
+
+    if (digit && _conversation) {
+      _conversation.sendDtmfCode(digit);
+    }
   }
 
   return (
@@ -63,7 +104,7 @@ function App() {
         <label>JobId
           <input id="jobid" />
         </label>
-        <button onClick={handleClickConnectAsync}>{_conversation && _conversation.connected ? "disconnect" : "connect"}</button>
+        <button onClick={handleClickConnectAsync}>{_conversation && _connected ? "disconnect" : "connect"}</button>
         <button onClick={handleClickTakeOver}>takeover</button>
         <button onClick={handleClickMute}>{_conversation && _conversation.muted ? "unmute" : "mute"}</button>
       </div>
