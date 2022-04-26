@@ -11,6 +11,7 @@ callService.onLog = (message: string) => {
 function App() {
   const [_conversation, _setConversation] = useState<Conversation | null>(null);
   const [_connected, _setConnected] = useState(false);
+  const [_muted, _setMuted] = useState(true);
 
   // The call can be disconnected at any time. We need to observe this
   // property of the conversation and bind it into the React component 
@@ -76,6 +77,7 @@ function App() {
       else {
         _conversation.mute();
       }
+      _setMuted(_conversation.muted);
     }
   }
 
@@ -106,7 +108,7 @@ function App() {
         </label>
         <button onClick={handleClickConnectAsync}>{_conversation && _connected ? "disconnect" : "connect"}</button>
         <button onClick={handleClickTakeOver}>takeover</button>
-        <button onClick={handleClickMute}>{_conversation && _conversation.muted ? "unmute" : "mute"}</button>
+        <button onClick={handleClickMute}>{_conversation && _muted ? "unmute" : "mute"}</button>
       </div>
 
       <div id="transcript"></div>
