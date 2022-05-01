@@ -1,5 +1,5 @@
 import './softphone.css';
-import { useState, useEffect, MouseEvent } from 'react';
+import { useState, useEffect, MouseEvent, FormEvent, ChangeEvent } from 'react';
 import CallService, { Conversation } from "@outbound-ai/softphone";
 
 const callService = new CallService("ws://localhost:5001");
@@ -8,10 +8,17 @@ callService.onLog = (message: string) => {
   console.log('softphone', message);
 };
 
+interface IMessage {
+  participant: string,
+  text: string
+}
+
 function App() {
   const [_conversation, _setConversation] = useState<Conversation | null>(null);
   const [_connected, _setConnected] = useState(false);
   const [_muted, _setMuted] = useState(true);
+  const [_speechMessage, _setSpeechMessage] = useState("");
+  const [_transcript, _setTranscript] = useState(new Array<IMessage>());
 
   // The call can be disconnected at any time. We need to observe this
   // property of the conversation and bind it into the React component 
@@ -21,6 +28,7 @@ function App() {
       const interval = setInterval(() => {
         if (_conversation.connected !== _connected) {
           _setConnected(_conversation.connected);
+          _setTranscript([]);
         }
       }, 100);
 
@@ -34,20 +42,16 @@ function App() {
   useEffect(() => {
     if (_conversation) {
       _conversation.onTranscriptAvailable = (participant, text) => {
-        const transcript = document.getElementById("transcript");
-
-        if (transcript) {
-          const container = document.createElement("div");
-          transcript.appendChild(container);
-          const message = document.createElement("div");
-          message.innerText = `${participant}: ${text}`;
-          container.appendChild(message);
-        }
+        const message = { participant, text }
+        const transcript = [message].concat(_transcript);
+        _setTranscript(transcript);
       };
     }
-  }, [_conversation]);
+  }, [_conversation, _transcript]);
 
   async function handleClickConnectAsync(event: MouseEvent) {
+    event.stopPropagation();
+
     if (_conversation == null) {
       const input = document.getElementById("jobid") as HTMLInputElement;
       const jobId = input.value;
@@ -61,6 +65,7 @@ function App() {
   }
 
   function handleClickTakeOver(event: MouseEvent) {
+    event.stopPropagation();
     const element = event.target as HTMLInputElement;
     element.hidden = true;
 
@@ -70,6 +75,8 @@ function App() {
   }
 
   function handleClickMute(event: MouseEvent) {
+    event.stopPropagation();
+
     if (_conversation) {
       if (_conversation.muted) {
         _conversation.unmute();
@@ -81,59 +88,127 @@ function App() {
     }
   }
 
-  function handleClickSendMessage() {
-    const input = document.getElementById("message") as HTMLInputElement;
-
-    if (_conversation) {
-      _conversation.sendSynthesizedSpeech(input.value);
-    }
-
-    input.value = "";
+  function handleSpeechMessageChanged(event: ChangeEvent<HTMLInputElement>) {
+    _setSpeechMessage(event.target.value);
   }
 
-  function handleClickSendDtmfCode(event: MouseEvent) {
-    const target = event.target as HTMLButtonElement;
-    const digit = target.dataset.digit;
+  function handleSubmitSynthesizedSpeech(event: FormEvent) {
+    event.preventDefault()
 
-    if (digit && _conversation) {
-      _conversation.sendDtmfCode(digit);
+    if (_conversation) {
+      _conversation.synthesizeSpeech(_speechMessage);
+    }
+
+    _setSpeechMessage("");
+  }
+
+  function createHandleClickSendDtmfCode(code: string) {
+    return function handleClickSendDtmfCode(event: MouseEvent) {
+      if (code && _conversation) {
+        _conversation.synthesizeTouchTones(code);
+      }
+    }
+  }
+
+  function handleHangup() {
+    if (_connected) {
+      _conversation?.hangup();
     }
   }
 
   return (
     <div id="softphone">
-      <div id="controls">
+      <div className="controls">
         <label>JobId
           <input id="jobid" />
         </label>
         <button onClick={handleClickConnectAsync}>{_conversation && _connected ? "disconnect" : "connect"}</button>
-        <button onClick={handleClickTakeOver}>takeover</button>
-        <button onClick={handleClickMute}>{_conversation && _muted ? "unmute" : "mute"}</button>
+        <button onClick={handleClickTakeOver} disabled={!(_conversation && _connected)}>takeover</button>
+        <button onClick={handleClickMute} disabled={!(_conversation && _connected)}>{_conversation && _connected && _muted ? "unmute" : "mute"}</button>
+        <button onClick={handleHangup} disabled={!(_conversation && _connected)}>hangup</button>
       </div>
 
-      <div id="transcript"></div>
+      <div id="transcript">
+        {_transcript.map(function (message, i) {
+          return <div className="transcript" key={i}>
+            <div className="bold">{message.participant}</div>
+            <div> {message.text}</div>
+          </div>;
+        })}
+      </div>
 
-      <div id="controls">
-        <label>Message
-          <input id="message" />
+      <form className="controls" onSubmit={handleSubmitSynthesizedSpeech}>
+        <label>Speech
+          <input type="text" value={_speechMessage} onChange={handleSpeechMessageChanged} />
         </label>
-        <button onClick={handleClickSendMessage}>send</button>
-      </div>
+        <input type="submit" value="Submit" />
+      </form>
 
-      <div id="controls">
-        <div>
-          <button className="dtmf" data-digit="0" onClick={handleClickSendDtmfCode}>0</button>
-          <button className="dtmf" data-digit="1" onClick={handleClickSendDtmfCode}>1</button>
-          <button className="dtmf" data-digit="2" onClick={handleClickSendDtmfCode}>2</button>
-          <button className="dtmf" data-digit="3" onClick={handleClickSendDtmfCode}>3</button>
-          <button className="dtmf" data-digit="4" onClick={handleClickSendDtmfCode}>4</button>
+      <div className="dialpad">
+        <div className="row">
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("1")}>
+            <div className="bold">1</div>
+          </button>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("2")}>
+            <div className="bold">2</div>
+            <div>(abc)</div>
+          </button>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("3")}>
+            <div className="bold">3</div>
+            <div>(def)</div>
+          </button>
+          <button className="dtmf blue" onClickCapture={createHandleClickSendDtmfCode("A")}>
+            <div className="bold">A</div>
+          </button>
         </div>
-        <div>
-          <button className="dtmf" data-digit="5" onClick={handleClickSendDtmfCode}>5</button>
-          <button className="dtmf" data-digit="6" onClick={handleClickSendDtmfCode}>6</button>
-          <button className="dtmf" data-digit="7" onClick={handleClickSendDtmfCode}>7</button>
-          <button className="dtmf" data-digit="8" onClick={handleClickSendDtmfCode}>8</button>
-          <button className="dtmf" data-digit="9" onClick={handleClickSendDtmfCode}>9</button>
+        <div className="row">
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("4")}>
+            <div className="bold">4</div>
+            <div>(ghi)</div>
+          </button>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("5")}>
+            <div className="bold">5</div>
+            <div>(jkl)</div>
+          </button>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("6")}>
+            <div className="bold">6</div>
+            <div>(mno)</div>
+          </button>
+          <button className="dtmf blue" onClickCapture={createHandleClickSendDtmfCode("B")}>
+            <div className="bold">B</div>
+          </button>
+        </div>
+        <div className="row">
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("7")}>
+            <div className="bold">7</div>
+            <div>(prs)</div>
+          </button>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("8")}>
+            <div className="bold">8</div>
+            <div>(tuv)</div>
+          </button>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("9")}>
+            <div className="bold">9</div>
+            <div>(wxy)</div>
+          </button>
+          <button className="dtmf blue" onClickCapture={createHandleClickSendDtmfCode("C")}>
+            <div className="bold">C</div>
+          </button>
+        </div>
+        <div className="row">
+          <button className="dtmf yellow" onClickCapture={createHandleClickSendDtmfCode("*")}>
+            <div className="bold">*</div>
+          </button>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("0")}>
+            <div className="bold">0</div>
+            <div>(operator)</div>
+          </button>
+          <button className="dtmf yellow" onClickCapture={createHandleClickSendDtmfCode("#")}>
+            <div className="bold">#</div>
+          </button>
+          <button className="dtmf blue" onClickCapture={createHandleClickSendDtmfCode("D")}>
+            <div className="bold">D</div>
+          </button>
         </div>
       </div>
     </div>
