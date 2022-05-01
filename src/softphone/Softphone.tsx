@@ -18,7 +18,6 @@ function App() {
   const [_connected, _setConnected] = useState(false);
   const [_muted, _setMuted] = useState(true);
   const [_speechMessage, _setSpeechMessage] = useState("");
-  const [_touchToneSequence, _setTouchToneSequence] = useState("");
   const [_transcript, _setTranscript] = useState(new Array<IMessage>());
 
   // The call can be disconnected at any time. We need to observe this
@@ -44,13 +43,15 @@ function App() {
     if (_conversation) {
       _conversation.onTranscriptAvailable = (participant, text) => {
         const message = { participant, text }
-        const transcript = _transcript.concat([message]);
+        const transcript = [message].concat(_transcript);
         _setTranscript(transcript);
       };
     }
   }, [_conversation, _transcript]);
 
   async function handleClickConnectAsync(event: MouseEvent) {
+    event.stopPropagation();
+
     if (_conversation == null) {
       const input = document.getElementById("jobid") as HTMLInputElement;
       const jobId = input.value;
@@ -64,6 +65,7 @@ function App() {
   }
 
   function handleClickTakeOver(event: MouseEvent) {
+    event.stopPropagation();
     const element = event.target as HTMLInputElement;
     element.hidden = true;
 
@@ -73,6 +75,8 @@ function App() {
   }
 
   function handleClickMute(event: MouseEvent) {
+    event.stopPropagation();
+
     if (_conversation) {
       if (_conversation.muted) {
         _conversation.unmute();
@@ -92,32 +96,17 @@ function App() {
     event.preventDefault()
 
     if (_conversation) {
-      _conversation.sendSynthesizedSpeech(_speechMessage);
+      _conversation.synthesizeSpeech(_speechMessage);
     }
 
     _setSpeechMessage("");
   }
 
-  function handleTouchToneSequenceChanged(event: ChangeEvent<HTMLInputElement>) {
-    _setTouchToneSequence(event.target.value);
-  }
-
-  function handleSubmitTouchToneSequence(event: FormEvent) {
-    event.preventDefault()
-
-    if (_conversation) {
-      _conversation.sendTouchToneSequence(_touchToneSequence);
-    }
-
-    _setTouchToneSequence("");
-  }
-
-  function handleClickSendDtmfCode(event: MouseEvent) {
-    const element = event.target as HTMLButtonElement;
-    const code = element.dataset.code;
-
-    if (code && _conversation) {
-      _conversation.sendDtmfCodes(code);
+  function createHandleClickSendDtmfCode(code: string) {
+    return function handleClickSendDtmfCode(event: MouseEvent) {
+      if (code && _conversation) {
+        _conversation.synthesizeTouchTones(code);
+      }
     }
   }
 
@@ -157,78 +146,71 @@ function App() {
 
       <div className="dialpad">
         <div className="row">
-          <button className="dtmf green" data-code="1" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("1")}>
             <div className="bold">1</div>
           </button>
-          <button className="dtmf green" data-code="2" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("2")}>
             <div className="bold">2</div>
             <div>(abc)</div>
           </button>
-          <button className="dtmf green" data-code="3" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("3")}>
             <div className="bold">3</div>
             <div>(def)</div>
           </button>
-          <button className="dtmf blue" data-code="A" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf blue" onClickCapture={createHandleClickSendDtmfCode("A")}>
             <div className="bold">A</div>
           </button>
         </div>
         <div className="row">
-          <button className="dtmf green" data-code="4" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("4")}>
             <div className="bold">4</div>
             <div>(ghi)</div>
           </button>
-          <button className="dtmf green" data-code="5" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("5")}>
             <div className="bold">5</div>
             <div>(jkl)</div>
           </button>
-          <button className="dtmf green" data-code="6" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("6")}>
             <div className="bold">6</div>
             <div>(mno)</div>
           </button>
-          <button className="dtmf blue" data-code="B" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf blue" onClickCapture={createHandleClickSendDtmfCode("B")}>
             <div className="bold">B</div>
           </button>
         </div>
         <div className="row">
-          <button className="dtmf green" data-code="7" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("7")}>
             <div className="bold">7</div>
             <div>(prs)</div>
           </button>
-          <button className="dtmf green" data-code="8" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("8")}>
             <div className="bold">8</div>
             <div>(tuv)</div>
           </button>
-          <button className="dtmf green" data-code="9" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("9")}>
             <div className="bold">9</div>
             <div>(wxy)</div>
           </button>
-          <button className="dtmf blue" data-code="C" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf blue" onClickCapture={createHandleClickSendDtmfCode("C")}>
             <div className="bold">C</div>
           </button>
         </div>
         <div className="row">
-          <button className="dtmf yellow" data-code="*" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf yellow" onClickCapture={createHandleClickSendDtmfCode("*")}>
             <div className="bold">*</div>
           </button>
-          <button className="dtmf green" data-code="0" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf green" onClickCapture={createHandleClickSendDtmfCode("0")}>
             <div className="bold">0</div>
             <div>(operator)</div>
           </button>
-          <button className="dtmf yellow" data-code="#" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf yellow" onClickCapture={createHandleClickSendDtmfCode("#")}>
             <div className="bold">#</div>
           </button>
-          <button className="dtmf blue" data-code="D" onClickCapture={handleClickSendDtmfCode}>
+          <button className="dtmf blue" onClickCapture={createHandleClickSendDtmfCode("D")}>
             <div className="bold">D</div>
           </button>
         </div>
       </div>
-
-      <form className="controls" onSubmit={handleSubmitTouchToneSequence}>
-        <label>Touch Tone Sequence
-          <input value={_touchToneSequence} onChange={handleTouchToneSequenceChanged} />
-        </label>
-        <input type="submit" value="Submit" />
-      </form>
     </div>
   );
 }
