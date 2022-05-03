@@ -9,7 +9,8 @@ callService.onLog = (message: string) => {
 };
 
 interface IMessage {
-  participant: string,
+  participantId: string,
+  participantType: string,
   text: string
 }
 
@@ -41,8 +42,8 @@ function App() {
   // New messages can arrive at any time.
   useEffect(() => {
     if (_conversation) {
-      _conversation.onTranscriptAvailable = (participant, text) => {
-        const message = { participant, text }
+      _conversation.onTranscriptAvailable = (participantId, participantType, text) => {
+        const message = { participantId, participantType, text }
         const transcript = [message].concat(_transcript);
         _setTranscript(transcript);
       };
@@ -131,7 +132,11 @@ function App() {
       <div id="transcript">
         {_transcript.map(function (message, i) {
           return <div className="transcript" key={i}>
-            <div className="bold">{message.participant}</div>
+            <div>
+              <span className="bold">{message.participantType}</span>
+              <span> </span>
+              <span className="light">({message.participantId})</span>
+            </div>
             <div> {message.text}</div>
           </div>;
         })}

@@ -52,6 +52,11 @@
   font-weight: bolder;
 }
 
+#softphone .light {
+  color: gray;
+  font-weight: light;
+}
+
 #softphone .dtmf.green {
   background-color: palegreen;
 }
