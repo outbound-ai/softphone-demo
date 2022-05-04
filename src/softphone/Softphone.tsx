@@ -2,7 +2,8 @@ import './softphone.css';
 import { useState, useEffect, MouseEvent, FormEvent, ChangeEvent } from 'react';
 import CallService, { Conversation } from "@outbound-ai/softphone";
 
-const callService = new CallService("ws://localhost:5001");
+const serviceUri = process.env.REACT_APP_SERVICE_URI ?? "ws://localhost:5001";
+const callService = new CallService(serviceUri);
 
 callService.onLog = (message: string) => {
   console.log('softphone', message);

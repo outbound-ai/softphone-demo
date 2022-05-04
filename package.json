@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@outbound-ai/softphone": "file:../softphone",
+    "@outbound-ai/softphone": "1.0.2",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.1.0",
     "@testing-library/user-event": "^13.5.0",
@@ -18,7 +18,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start-local": "REACT_APP_SERVICEHOST=ws://localhost:5001 react-scripts start",
+    "start-dev": "PORT=3030 REACT_APP_SERVICEHOST=wss://calls.phoenix.newdev.virtualoutbound.com react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
