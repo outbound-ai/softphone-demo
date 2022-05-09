@@ -1,5 +1,5 @@
 # Outbound.Calls.Softphone.Demo
-A demonstration of using the [Outbound.Calls.Softphone](https://github.com/outbound-ai/Oubound.Calls.Softphone) package with the [create-react-app](https://create-react-app.dev/) project template.
+A demonstration of using the [@outbound-ai/softphone](https://github.com/outbound-ai/softphone/packages/1372803) NPM package package with a [create-react-app](https://create-react-app.dev/) project template.
 
 ## Notes
 - You will need to configure your ~/.npmrc file like this to access the [@outbound-ai/softphone](https://github.com/outbound-ai/softphone/packages/1372803) NPM package and run ```npm install```.
