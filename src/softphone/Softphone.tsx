@@ -21,28 +21,24 @@ function App() {
   const [_muted, _setMuted] = useState(true);
   const [_speechMessage, _setSpeechMessage] = useState("");
   const [_transcript, _setTranscript] = useState(new Array<IMessage>());
+  const [_participants, _setParticipants] = useState({} as Record<string, string>);
 
-  // The call can be disconnected at any time. We need to observe this
-  // property of the conversation and bind it into the React component 
-  // state.
   useEffect(() => {
     if (_conversation) {
-      const interval = setInterval(() => {
-        if (_conversation.connected !== _connected) {
-          _setConnected(_conversation.connected);
-          _setTranscript([]);
-        }
-      }, 100);
 
-      return () => {
-        clearInterval(interval);
+      // The call can be disconnected at any time.
+      _conversation.onParticipantStateChanged = (participants) => {
+        _setParticipants(participants);
+      };
+
+      // Participants can change at any time.
+      _conversation.onConnectionStateChanged = (connected) => {
+        _setConnected(connected);
+        _setTranscript([]);
+        _setParticipants({});
       }
-    }
-  }, [_conversation, _connected]);
 
-  // New messages can arrive at any time.
-  useEffect(() => {
-    if (_conversation) {
+      // New messages can arrive at any time.
       _conversation.onTranscriptAvailable = (participantId, participantType, text) => {
         const message = { participantId, participantType, text }
         const transcript = [message].concat(_transcript);
@@ -90,6 +86,14 @@ function App() {
     }
   }
 
+  function createHandleClickRemoveParticipant(participantId: string) {
+    return function handleClickSendDtmfCode(event: MouseEvent) {
+      if (_conversation) {
+        _conversation.removeParticipant(participantId);
+      }
+    }
+  }
+
   function handleSpeechMessageChanged(event: ChangeEvent<HTMLInputElement>) {
     _setSpeechMessage(event.target.value);
   }
@@ -131,8 +135,8 @@ function App() {
       </div>
 
       <div id="transcript">
-        {_transcript.map(function (message, i) {
-          return <div className="transcript" key={i}>
+        {_transcript.map(function (message, index) {
+          return <div className="transcript" key={index}>
             <div>
               <span className="bold">{message.participantType}</span>
               <span> </span>
@@ -216,6 +220,16 @@ function App() {
             <div className="bold">D</div>
           </button>
         </div>
+      </div>
+
+      <div className="participants">
+        {Object.keys(_participants).map(function (participantId, index) {
+          return <div className="participant" key={index}>
+            <button className="red" onClick={createHandleClickRemoveParticipant(participantId)}>X</button>
+            <span className="bold">{_participants[participantId]}</span>
+            <span className="light">({participantId})</span>
+          </div>
+        })}
       </div>
     </div>
   );
