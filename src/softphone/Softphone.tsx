@@ -129,7 +129,6 @@ function App() {
           <input id="jobid" />
         </label>
         <button onClick={handleClickConnectAsync}>{_conversation && _connected ? "disconnect" : "connect"}</button>
-        <button onClick={handleClickTakeOver} disabled={!(_conversation && _connected)}>takeover</button>
         <button onClick={handleClickMute} disabled={!(_conversation && _connected)}>{_conversation && _connected && _muted ? "unmute" : "mute"}</button>
         <button onClick={handleHangup} disabled={!(_conversation && _connected)}>hangup</button>
       </div>
