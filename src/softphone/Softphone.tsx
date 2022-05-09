@@ -62,16 +62,6 @@ function App() {
     }
   }
 
-  function handleClickTakeOver(event: MouseEvent) {
-    event.stopPropagation();
-    const element = event.target as HTMLInputElement;
-    element.hidden = true;
-
-    if (_conversation) {
-      _conversation.unmute();
-    }
-  }
-
   function handleClickMute(event: MouseEvent) {
     event.stopPropagation();
 
