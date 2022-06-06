@@ -15,11 +15,12 @@
     "react-dom": "^18.0.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.6.3",
+    "cross-env": "^7.0.3",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start-local": "REACT_APP_ENV=local REACT_APP_SERVICE_URI=ws://localhost:5001 react-scripts start",
-    "start-dev": "PORT=3030 REACT_APP_ENV=dev REACT_APP_SERVICE_URI=wss://calls.phoenix.newdev.virtualoutbound.com react-scripts start",
+    "start-local": "cross-env REACT_APP_ENV=local REACT_APP_SERVICE_URI=ws://localhost:5001 react-scripts start",
+    "start-dev": "cross-env PORT=3030 REACT_APP_ENV=dev REACT_APP_SERVICE_URI=wss://calls.phoenix.newdev.virtualoutbound.com react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -41,5 +42,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }
