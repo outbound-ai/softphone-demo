@@ -1,74 +1,184 @@
 #softphone {
+  font-family: system-ui, sans-serif;
   margin: 25px;
+  color: #333;
+}
+
+/* Button & Input Controls */
+#softphone .controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+#softphone .controls label {
+  font-weight: 500;
+}
+
+#softphone .controls form {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+
+#softphone input[type="text"],
+#softphone input[type="submit"],
+#softphone input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+#softphone .controls button {
+  padding: 6px 12px;
+  font-size: 14px;
+  background-color: #f4f4f4;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+#softphone .controls button:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+#softphone .controls button:disabled {
+  background-color: #f9f9f9;
+  color: #aaa;
+  border-color: #ddd;
+  cursor: not-allowed;
+}
+
+/* Transcript & Dialpad Side-by-Side */
+#softphone .content {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+#softphone .transcript-panel {
+  flex: 1;
 }
 
 #softphone #transcript {
-  padding: 10px;
-  border: 1px solid gray;
-  width: 800px;
-  height: 500px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 6px;
+  height: 600px;
   overflow-y: auto;
 }
 
-#softphone #transcript .message {
-  border: 1px solid gray;
-  padding: 5px;
-  margin: 10px 0;
+#softphone .transcript {
+  background: #fff;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-left: 4px solid #ccc;
+  border-radius: 4px;
 }
 
-#softphone .controls {
-  margin: 20px 0;
+#softphone .bold {
+  font-weight: 600;
 }
 
-#softphone .controls input {
-  width: 300px;
-  margin: 0 0 0 10px;
+#softphone .light {
+  color: #777;
+  font-weight: 400;
+  font-size: 13px;
 }
 
-#softphone .controls input[type=submit] {
-  width: 100px;
-  margin: 10px 0 0 10px;
+/* Dialpad Styling */
+#softphone .dialpad-panel {
+  width: 280px;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 16px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 #softphone .dialpad {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 #softphone .row {
   display: flex;
-  margin-top: 5px
+  gap: 8px;
 }
 
 #softphone .dtmf {
-  min-width: 75px;
-  min-height: 75px;
-  margin: 0 5px 0 0;
-  padding: 0;
+  flex: 1;
+  min-width: 60px;
+  min-height: 60px;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
 }
 
-#softphone .bold {
-  font-size: 125%;
-  font-weight: bolder;
+#softphone .dtmf:hover {
+  background-color: #e6e6e6;
 }
 
-#softphone .light {
-  color: gray;
-  font-weight: light;
+/* Participants */
+#softphone .participants {
+  margin-top: 20px;
 }
 
-#softphone .dtmf.green {
-  background-color: palegreen;
+#softphone .participant {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
-#softphone .dtmf.yellow {
-  background-color: palegoldenrod;
+#softphone .participant .red {
+  background-color: #e57373;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
 }
 
-#softphone .dtmf.blue {
-  background-color: paleturquoise;
+.connected {
+  color: green;
+  font-size: smaller!important;
+  /*create a circle with 10px diameter*/
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: green;
+  display: inline-block;
+  margin-left: 5px;
+  vertical-align: middle;
+  box-shadow: 0 0 0 2px white;
+  transition: background-color 0.3s ease;
 }
 
-#softphone .transcript {
-  margin: 0 0 10px 0;
+.disconnected {
+  color: red;
+  font-size: smaller!important;
+  /*create a circle with 10px diameter*/
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: red;
+  display: inline-block;
+  margin-left: 5px;
+  vertical-align: middle;
+  box-shadow: 0 0 0 2px white;
+  transition: background-color 0.3s ease;
 }
