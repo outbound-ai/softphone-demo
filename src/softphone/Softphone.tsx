@@ -68,9 +68,11 @@ enum CallParticipantTypeEnum {
  * - handleSubmitSynthesizedSpeech: Submits text for speech synthesis.
  * - createHandleClickSendDtmfCode: Sends DTMF codes via the dialpad.
  * - handleHangup: Hangs up the current conversation.
+ * - handleTakeOver: Initiates the agent takeover process for the current conversation.
+ * 
  *
  * UI Elements:
- * - Job ID input and connect/disconnect button.
+ * - Claim ID input field for starting a call.
  * - Mute/unmute speaker and microphone buttons.
  * - Agent takeover and hangup buttons.
  * - Transcript panel displaying exchanged messages.
@@ -156,8 +158,14 @@ function App() {
     }
   }, [_payerAgentReady, handleTakeOver]);
 
-  //https://nayans-claims.phoenix.dev.virtualoutbound.com/api/v1/claims/ceb96f00-90e9-4079-8a7d-6538b404449b/calls
-  //https://nayans-claims.phoenix.dev.virtualoutbound.com/api/v1/calls/9f3bd8f2-9d5d-4ec1-b2e4-9935ef227c16
+  /**
+   * Starts a new payer representative call for the given claim ID.
+   * Sends a POST request to the claims API to initiate the call.
+   * Returns the response data containing the job ID.
+   *
+   * @param claimId - The ID of the claim to start the call for.
+   * @returns A promise that resolves to the response data containing the job ID.
+   */
 
   const startPayerRepCall = async (claimId: string) => {
     const token = await authApi.getAuthToken();
@@ -191,7 +199,15 @@ function App() {
       throw error;
     }
   };
-
+  
+  /**
+   * Checks the progress of a job by its ID.
+   * Sends a GET request to the claims API to retrieve the job status.
+   * Returns the response data containing the job status.
+   *
+   * @param jobId - The ID of the job to check progress for.
+   * @returns A promise that resolves to the response data containing the job status.
+   */
   const checkforJobProgress = useCallback(async (jobId: string) => {
     const token = await authApi.getAuthToken();
     try {
@@ -222,17 +238,13 @@ function App() {
   }, []);
 
   /**
-   * Handles the connect/disconnect button click event.
-   *
-   * If there is no active conversation, retrieves the job ID from the input element,
-   * obtains an authentication token, and initiates a new conversation using the call service.
-   * Sets the conversation state upon successful connection.
-   *
-   * If a conversation is already active, disconnects it and resets related state variables.
+   * Handles the click event for connecting or disconnecting the softphone.
+   * If there is no active conversation, it starts a new payer representative call
+   * using the claim ID from the input field. If a conversation exists, it disconnects it.
+   * It also checks the job status periodically until the job is in progress.
    *
    * @param event - The mouse event triggered by clicking the connect button.
    */
-
   async function handleClickConnectAsync(event: MouseEvent) {
     setJobStatus(false);
     setIsLoading(true);
@@ -243,7 +255,7 @@ function App() {
       _setHasTakenOver(false);
       _setMuted(true);
       _setTranscript([]);
-      const input = document.getElementById("jobid") as HTMLInputElement;
+      const input = document.getElementById("claimid") as HTMLInputElement;
       const claimId = input.value.split("/").pop() as string;
       const callJob = await startPayerRepCall(claimId);
       const jobId = callJob.jobId;
@@ -340,6 +352,15 @@ function App() {
     _setSpeechMessage("");
   }
 
+  /**
+   * Creates a click handler for sending DTMF codes.
+   * Returns a function that, when called, sends the specified DTMF code
+   * to the current conversation if it exists.
+   *
+   * @param code - The DTMF code to send.
+   * @returns A function that handles the click event to send the DTMF code.
+   */
+
   function createHandleClickSendDtmfCode(code: string) {
     return function handleClickSendDtmfCode(event: MouseEvent) {
       if (code && _conversation) {
@@ -347,6 +368,11 @@ function App() {
       }
     };
   }
+
+  /**
+   * Handles the hangup action for the current conversation.
+   * If the conversation is connected, it calls the hangup method on the conversation instance.
+   */
 
   function handleHangup() {
     if (_connected) {
@@ -381,6 +407,9 @@ function App() {
     ],
   ];
 
+  // Mapping participant types to titles for display in the transcript
+  // This mapping is used to display a user-friendly title for each participant type in the transcript
+
   const participantTypeToTitleMapping = {
     [CallParticipantTypeEnum.foreignPhoneParticipant]: "Foreign Phone",
     [CallParticipantTypeEnum.browserParticipant]:
@@ -410,8 +439,8 @@ function App() {
       {/* Connection Controls */}
       <div className="controls">
         <>
-          <label>JobId</label>
-          <input id="jobid" />
+          <label>ClaimId</label>
+          <input id="claimid" />
         </>
         {/* Connect/Disconnect Button */}
         {!_conversation?.connected && (
