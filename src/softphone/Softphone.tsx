@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { authApi } from "../AuthApi";
+import { fetchPreferedTenant } from "./api";
 import "./softphone.css";
 
 const serviceUri = process.env.REACT_APP_SERVICE_URI ?? "ws://localhost:5001";
@@ -30,13 +31,11 @@ enum TakeOverTypeEnum {
 }
 
 enum CallParticipantTypeEnum {
-  foreignPhoneParticipant = 'ForeignPhoneParticipant',
-  browserParticipant = 'BrowserParticipant',
-  browserHeadsetParticipant = 'BrowserHeadsetParticipant',
-  AIAgentParticipant = 'AIAgentParticipant',
+  foreignPhoneParticipant = "ForeignPhoneParticipant",
+  browserParticipant = "BrowserParticipant",
+  browserHeadsetParticipant = "BrowserHeadsetParticipant",
+  AIAgentParticipant = "AIAgentParticipant",
 }
-
-
 
 /**
  * The main Softphone application component.
@@ -90,9 +89,10 @@ function App() {
   const [_takeOverType, _setTakeOverType] = useState<TakeOverTypeEnum>(
     TakeOverTypeEnum.none
   );
-  
   const [_hasTakenOver, _setHasTakenOver] = useState(false);
   const [_payerAgentReady, _setPayerAgentReady] = useState(false);
+  const [jobStatus, setJobStatus] = useState<boolean>(false);
+
 
   useEffect(() => {
     if (_conversation) {
@@ -135,7 +135,7 @@ function App() {
    * - _conversation: The current conversation object.
    * - _payerAgentReady: Boolean indicating if the payer agent is ready.
    */
-  
+
   const handleTakeOver = useCallback(() => {
     if (_conversation) {
       _conversation.agentTakeOver();
@@ -156,33 +156,71 @@ function App() {
     }
   }, [_payerAgentReady, handleTakeOver]);
 
+  //https://nayans-claims.phoenix.dev.virtualoutbound.com/api/v1/claims/ceb96f00-90e9-4079-8a7d-6538b404449b/calls
+  //https://nayans-claims.phoenix.dev.virtualoutbound.com/api/v1/calls/9f3bd8f2-9d5d-4ec1-b2e4-9935ef227c16
 
-
-  /* const fetchClaimsDetails = async (claimId :string) => {
+  const startPayerRepCall = async (claimId: string) => {
+    const token = await authApi.getAuthToken();
     try {
-      const response = await fetch(`${process.env.REACT_APP_CLAIMS_URL}/api/v1/claims/${claimId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authApi.getAuthToken()}`,
-          currentUser: localStorage.getItem('currentUser') || '',
-          'outbound-ai-preferred-tenan': localStorage.getItem('preferredTenant') || '',
-          refresh_token : localStorage.getItem('refreshToken') || '',
-        },
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_CLAIMS_URL}/api/v1/claims/${claimId}/calls`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            currentUser: localStorage.getItem("currentUser") || "",
+            "outbound-ai-preferred-tenant": await fetchPreferedTenant(),
+            refresh_token: localStorage.getItem("refreshToken") || "",
+          },
+          body: JSON.stringify({
+            type: "HumanAgent",
+            useCase: "CSI",
+          }),
+        }
+
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch claim details');
+        throw new Error("Failed to fetch claim details");
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error fetching claim details:', error);
+      console.error("Error fetching claim details:", error);
       throw error;
     }
-  };  */
-   
+  };
+
+  const checkforJobProgress = useCallback(async (jobId: string) => {
+     const token = await authApi.getAuthToken();
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_CLAIMS_URL}/api/v1/calls/${jobId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            currentUser: localStorage.getItem("currentUser") || "",
+            "outbound-ai-preferred-tenant": await fetchPreferedTenant(),
+            refresh_token: localStorage.getItem("refreshToken") || "",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to check job progress");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error checking job progress:", error);
+      throw error;
+    }
+  }, []);
 
   /* const getCurrentActiveCallJobId = () => {
 
@@ -190,17 +228,18 @@ function App() {
 
   /**
    * Handles the connect/disconnect button click event.
-   * 
+   *
    * If there is no active conversation, retrieves the job ID from the input element,
    * obtains an authentication token, and initiates a new conversation using the call service.
    * Sets the conversation state upon successful connection.
-   * 
+   *
    * If a conversation is already active, disconnects it and resets related state variables.
-   * 
+   *
    * @param event - The mouse event triggered by clicking the connect button.
    */
-  
+
   async function handleClickConnectAsync(event: MouseEvent) {
+    setJobStatus(false);
     event.stopPropagation();
 
     if (_conversation == null) {
@@ -209,13 +248,28 @@ function App() {
       _setMuted(true);
       _setTranscript([]);
       const input = document.getElementById("jobid") as HTMLInputElement;
-      const jobId = input.value;
-      const authTokn = authApi.getAuthToken();
-      const conversation = await callService.getConversationAsync(
-        jobId,
-        authTokn
-      );
-      _setConversation(conversation);
+      const claimId = input.value.split("/").pop()  as string;
+      const callJob = await startPayerRepCall(claimId);
+      const jobId = callJob.jobId;
+      const authTokn = await authApi.getAuthToken();
+      if (!jobStatus) {
+        const interval = setInterval(async () => {
+          const jobStatus = await checkforJobProgress(jobId);
+          if (jobStatus.status === 2) {
+            setJobStatus(true);
+            clearInterval(interval);
+            const conversation = await callService.getConversationAsync(
+              jobId,
+              authTokn
+            );
+            _setConversation(conversation);
+            _setConnected(true);
+          } else {
+            console.error("Job is not in progress", jobStatus);
+          }
+        }, 1000);
+        return;
+      }
     } else {
       _conversation.disconnect();
       _setConversation(null);
@@ -302,8 +356,6 @@ function App() {
     }
   }
 
-  
-
   const dialpadRows = [
     [
       { code: "1", label: "1" },
@@ -333,15 +385,23 @@ function App() {
 
   const participantTypeToTitleMapping = {
     [CallParticipantTypeEnum.foreignPhoneParticipant]: "Foreign Phone",
-    [CallParticipantTypeEnum.browserParticipant]: authApi.getCurrentUser()?.username || "Browser",
+    [CallParticipantTypeEnum.browserParticipant]:
+      authApi.getCurrentUser()?.username || "Browser",
     [CallParticipantTypeEnum.AIAgentParticipant]: "AI Agent",
-  }
+  };
 
   return (
     <div id="softphone">
       {/* Header with connection status and title */}
       <div className="header">
-        <h1>{_conversation && _conversation.connected ? <span className="connected"></span> : <span className="disconnected"></span>} Softphone Demo </h1>
+        <h1>
+          {_conversation && _conversation.connected ? (
+            <span className="connected"></span>
+          ) : (
+            <span className="disconnected"></span>
+          )}{" "}
+          Softphone Demo{" "}
+        </h1>
       </div>
       {/* Connection Controls */}
       <div className="controls">
@@ -387,7 +447,7 @@ function App() {
         </button>
       </div>
 
-    {/* Transcript and Dialpad Panels */}
+      {/* Transcript and Dialpad Panels */}
       <div className="content">
         <div className="transcript-panel">
           <div id="transcript">
@@ -395,7 +455,9 @@ function App() {
               <div className="transcript" key={index}>
                 <div>
                   <span className="bold">
-                    {participantTypeToTitleMapping[message.participantType as keyof typeof participantTypeToTitleMapping] ?? message.participantType}
+                    {participantTypeToTitleMapping[
+                      message.participantType as keyof typeof participantTypeToTitleMapping
+                    ] ?? message.participantType}
                   </span>{" "}
                 </div>
                 <div>{message.text}</div>
@@ -445,7 +507,6 @@ function App() {
         />
         <input type="submit" value="Submit" />
       </form>
-
     </div>
   );
 }

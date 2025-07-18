@@ -24,7 +24,7 @@
   },
   "scripts": {
     "start-local": "cross-env REACT_APP_ENV=local REACT_APP_SERVICE_URI=ws://localhost:5001 REACT_APP_KEYCLOAK_CLIENT_REALM=dev react-scripts start",
-    "start-dev": "cross-env PORT=3030 REACT_APP_ENV=dev REACT_APP_SERVICE_URI=wss://nayans-calls.phoenix.dev.virtualoutbound.com REACT_APP_KEYCLOAK_CLIENT_REALM=dev react-scripts start",
+    "start-dev": "cross-env PORT=3030 REACT_APP_ENV=dev REACT_APP_SERVICE_URI=wss://nayans-calls.phoenix.dev.virtualoutbound.com REACT_APP_TENANT_ROLE_USER_URL=https://nayans-tenantroleuser.phoenix.dev.virtualoutbound.com  REACT_APP_CLAIMS_URL=https://nayans-claims.phoenix.dev.virtualoutbound.com REACT_APP_KEYCLOAK_CLIENT_REALM=dev react-scripts start",
     "start-dal-stg": "cross-env PORT=3030 REACT_APP_ENV=dal-stg REACT_APP_CLAIMS_URL=https://dal-stg-claims.phoenix.stg.outbound.ai REACT_APP_SERVICE_URI=wss://dal-stg-calls.phoenix.stg.outbound.ai REACT_APP_TENANT_ROLE_USER_URL=https://dal-stg-tenantroleuser.phoenix.stg.outbound.ai REACT_APP_KEYCLOAK_CLIENT_REALM=stg react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

@@ -132,7 +132,6 @@ const initKeycloak = async (onAuthenticatedCallback: (token: string | null) => v
       localStorage.setItem('refreshToken', keycloakInstance.refreshToken as string)
       localStorage.setItem('idToken', keycloakInstance.idToken as string)
       localStorage.setItem('tokenParsed', JSON.stringify(keycloakInstance.tokenParsed))
-      localStorage.setItem('preferredTenant', await fetchPreferedTenant())
 
       setupTokenRefresh()
       onAuthenticatedCallback(token || null)
@@ -147,30 +146,9 @@ const initKeycloak = async (onAuthenticatedCallback: (token: string | null) => v
   }
 }
 
-const fetchPreferedTenant = async () => {
-  try {
-    const response = await fetch(`${process.env.REACT_APP_TENANT_ROLE_USER_URL}/api/v1/preferences/highest/outbound-ai-preferred-tenant
-`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${keycloakInstance.token}`,
-      },
-    })
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch preferred tenant')
-    }
 
-    const data = await response.json()
-    return data.value
-  } catch (error) {
-    console.error('Error fetching preferred tenant:', error)
-    throw error
-  }
-}
-
-const getAuthToken = () => {
+const getAuthToken = async () => {
   if (keycloakInstance.token) {
     parseLoginResponseToStateCurrentUser(keycloakInstance.token as string)
   }
@@ -205,7 +183,8 @@ const keycloakRefresh = async () => {
   }
 }
 
-const isAuthenticated = () => {
+const isAuthenticated =  () => {
+
   return keycloakInstance.authenticated
 }
 
