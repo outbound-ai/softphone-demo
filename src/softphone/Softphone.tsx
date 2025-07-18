@@ -92,7 +92,7 @@ function App() {
   const [_hasTakenOver, _setHasTakenOver] = useState(false);
   const [_payerAgentReady, _setPayerAgentReady] = useState(false);
   const [jobStatus, setJobStatus] = useState<boolean>(false);
-
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (_conversation) {
@@ -178,7 +178,6 @@ function App() {
             useCase: "CSI",
           }),
         }
-
       );
 
       if (!response.ok) {
@@ -194,7 +193,7 @@ function App() {
   };
 
   const checkforJobProgress = useCallback(async (jobId: string) => {
-     const token = await authApi.getAuthToken();
+    const token = await authApi.getAuthToken();
     try {
       const response = await fetch(
         `${process.env.REACT_APP_CLAIMS_URL}/api/v1/calls/${jobId}`,
@@ -222,10 +221,6 @@ function App() {
     }
   }, []);
 
-  /* const getCurrentActiveCallJobId = () => {
-
-  } */
-
   /**
    * Handles the connect/disconnect button click event.
    *
@@ -240,6 +235,7 @@ function App() {
 
   async function handleClickConnectAsync(event: MouseEvent) {
     setJobStatus(false);
+    setIsLoading(true);
     event.stopPropagation();
 
     if (_conversation == null) {
@@ -248,7 +244,7 @@ function App() {
       _setMuted(true);
       _setTranscript([]);
       const input = document.getElementById("jobid") as HTMLInputElement;
-      const claimId = input.value.split("/").pop()  as string;
+      const claimId = input.value.split("/").pop() as string;
       const callJob = await startPayerRepCall(claimId);
       const jobId = callJob.jobId;
       const authTokn = await authApi.getAuthToken();
@@ -264,6 +260,7 @@ function App() {
             );
             _setConversation(conversation);
             _setConnected(true);
+            setIsLoading(false);
           } else {
             console.error("Job is not in progress", jobStatus);
           }
@@ -274,6 +271,7 @@ function App() {
       _conversation.disconnect();
       _setConversation(null);
       _setHasTakenOver(false);
+      setIsLoading(false);
     }
   }
 
@@ -392,6 +390,12 @@ function App() {
 
   return (
     <div id="softphone">
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <div className="loading-text">Call Starting...</div>
+        </div>
+      )}
       {/* Header with connection status and title */}
       <div className="header">
         <h1>
@@ -410,9 +414,9 @@ function App() {
           <input id="jobid" />
         </>
         {/* Connect/Disconnect Button */}
-        <button onClick={handleClickConnectAsync}>
-          {_conversation && _conversation.connected ? "Disconnect" : "Connect"}
-        </button>
+        {!_conversation?.connected && (
+          <button onClick={handleClickConnectAsync}>Start Call</button>
+        )}
         {/* Mute/Unmute Speaker Button */}
         <button
           onClick={handleClickMute}
@@ -438,13 +442,14 @@ function App() {
             Take Over
           </button>
         )}
-        {/* End Call Button */}
-        <button
-          onClick={handleHangup}
-          disabled={!(_conversation && _connected)}
-        >
-          End Call
-        </button>
+        {_conversation?.connected && (
+          <button
+            onClick={handleHangup}
+            disabled={!(_conversation && _connected)}
+          >
+            End Call
+          </button>
+        )}
       </div>
 
       {/* Transcript and Dialpad Panels */}
