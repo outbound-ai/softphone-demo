@@ -1,57 +1,60 @@
-# Outbound.Calls.Softphone.Demo
-A demonstration of using the [@outbound-ai/softphone] NPM package package with a [create-react-app](https://create-react-app.dev/) project template.
+# Softphone Demo Application
 
-## Notes
-- You will need to configure your ~/.npmrc file like this to access the [@outbound-ai/softphone] NPM package and run ```npm install```.
+## Setup and Run
 
-    ```
-    //npm.pkg.github.com/:_authToken={YOUR_PAT_TOKEN_HERE}
-    @outbound-ai:registry=https://npm.pkg.github.com
-    ```
+### Prerequisites
 
-- You can then use  ```npm run start``` to launch this project against a local instance of the call service  See the package.json file for the environment variables if you want to run this against other deployments of the service.
+- Node.js (v16 or higher)
+- npm or yarn
 
-- If you experience a problem, verify that the package.json is referencing the current version of the [@outbound-ai/softphone] NPM package and run ```npm update```. Sometimes a local reference gets checked in.
+### Installation
 
-# Softphone Application Component (src/softphone/Softphone.tsx)
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-The main Softphone application component.
+2. **Configure environment variables**
+   ```bash
+   cp env.example .env
+   ```
 
-This component manages the state and UI for a softphone demo, including conversation management,
-participant handling, transcript display, dialpad interactions, mute/unmute controls, agent takeover,
-and synthesized speech functionality.
+   Edit `.env` with your configuration values. See `src/config.example.js` for detailed configuration options.
 
-## State Variables
-- _conversation: The current active conversation instance.
-- _connected: Indicates if the softphone is connected to a conversation.
-- _muted: Indicates if the output (speaker) is muted.
-- _speechMessage: The current text input for speech synthesis.
-- _transcript: Array of transcript messages exchanged in the conversation.
-- _takeOverType: The current agent takeover type.
-- _participants: A record of participant IDs and their display names.
-- _hasTakenOver: Indicates if the agent has taken over the conversation.
-- _payerAgentReady: Indicates if the payer agent is ready to take over.
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-## Effects
-- Sets up conversation event handlers for connection state, transcript updates, and agent hold events.
-- Handles agent takeover confirmation when the payer agent is ready.
+4. **Open in browser**
+   - Navigate to `http://localhost:3030`
+   - Authenticate with Keycloak
+   - Enter a claim ID to start a call
 
-## Event Handlers
-- handleClickConnectAsync: Connects or disconnects the softphone from a conversation.
-- handleClickMute: Toggles speaker mute state.
-- handleClickMuteInput: Toggles microphone mute state.
-- createHandleClickRemoveParticipant: Removes a participant from the conversation.
-- handleSpeechMessageChanged: Updates the speech message input.
-- handleSubmitSynthesizedSpeech: Submits text for speech synthesis.
-- createHandleClickSendDtmfCode: Sends DTMF codes via the dialpad.
-- handleHangup: Hangs up the current conversation.
+### Available Scripts
 
-## UI Elements
-- Claim ID input field for starting a call.
-- Mute/unmute speaker and microphone buttons.
-- Agent takeover and hangup buttons.
-- Transcript panel displaying exchanged messages.
-- Dialpad for sending DTMF codes.
-- Synthesized speech input and submit form.
-- Participant list
-- End call - Hangup
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run serve    # Start fallback server
+```
+
+### Configuration
+
+The application uses a two-tier configuration system:
+
+1. **Environment Variables** (`.env` file) - Highest priority
+2. **Default Configuration** (`src/config.js`) - Fallback values
+
+See `src/config.example.js` for detailed configuration options and examples.
+
+### Quick Usage
+
+1. **Start a call**: Enter claim ID and click "Connect"
+2. **Take over**: Click "Take Over" when human agent is available
+3. **Audio controls**: Use mute buttons for speaker/microphone
+4. **Dialpad**: Send DTMF tones after taking over
+5. **Text-to-speech**: Type messages in the speech input field
+
+
