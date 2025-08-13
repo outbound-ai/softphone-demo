@@ -28,10 +28,10 @@ let currentUser = null;
 let isKeycloakInitialized = false;
 
 // Keycloak configuration
-const keycloakConfig = window.KEYCLOAK_CONFIG || {
-  url: 'https://auth.phoenix.ops.virtualoutbound.com/',
-  realm: 'stg',
-  clientId: 'aquarius-ui'
+const keycloakConfig = {
+  url: process.env.APP_KEYCLOAK_URL,
+  realm: process.env.APP_KEYCLOAK_REALM,
+  clientId: process.env.APP_KEYCLOAK_CLIENT_ID
 };
 
 let keycloakInstance = null;
@@ -95,7 +95,7 @@ function setKeycloakInstance(instance) {
  */
 async function loadKeycloak() {
   try {
-    const cdnUrl = (window.KEYCLOAK_CONFIG && window.KEYCLOAK_CONFIG.cdnUrl) || 'https://cdn.jsdelivr.net/npm/keycloak-js@latest/dist/keycloak.min.js';
+    const cdnUrl = 'https://cdn.jsdelivr.net/npm/keycloak-js@latest/dist/keycloak.min.js';
 
     // Load Keycloak script
     const script = document.createElement('script');
@@ -627,7 +627,8 @@ async function fetchPreferredTenant() {
       return null;
     }
 
-    const claimsUrl = process.env.APP_CLAIMS_URL || window.API_CONFIG.CLAIMS_URL;
+    const claimsUrl = process.env.APP_CLAIMS_URL;
+
     const response = await fetch(`${claimsUrl}/api/v1/tenants/preferred`, {
       method: 'GET',
       headers: {
@@ -706,7 +707,6 @@ const authApi = {
  * for use by other modules in the application.
  */
 window.authApi = authApi;
-window.keycloakConfig = keycloakConfig;
 window.loadKeycloak = loadKeycloak;
 window.getCurrentUser = getCurrentUser;
 window.fetchPreferredTenant = fetchPreferredTenant;

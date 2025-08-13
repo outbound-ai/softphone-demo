@@ -1,11 +1,14 @@
 # Softphone Demo Application
 
+A browser-based softphone demo application for real-time voice communication with AI and human agents.
+
 ## Setup and Run
 
 ### Prerequisites
 
 - Node.js (v16 or higher)
 - npm or yarn
+- Vite (will be installed as a dev dependency)
 
 ### Installation
 
@@ -14,12 +17,14 @@
    npm install
    ```
 
+   This will install all dependencies including Vite as a development dependency.
+
 2. **Configure environment variables**
    ```bash
    cp env.example .env
    ```
 
-   Edit `.env` with your configuration values. See `src/config.example.js` for detailed configuration options.
+   Edit `.env` with your configuration values.
 
 3. **Start development server**
    ```bash
@@ -40,14 +45,7 @@ npm run preview  # Preview production build
 npm run serve    # Start fallback server
 ```
 
-### Configuration
 
-The application uses a two-tier configuration system:
-
-1. **Environment Variables** (`.env` file) - Highest priority
-2. **Default Configuration** (`src/config.js`) - Fallback values
-
-See `src/config.example.js` for detailed configuration options and examples.
 
 ### Quick Usage
 

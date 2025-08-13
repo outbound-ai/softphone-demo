@@ -115,7 +115,6 @@ import CallService from '@outbound-ai/softphone';
 import './style.css';
 
 // Import our modules
-import './config.js';
 import './utils.js';
 import './auth.js';
 import './ui.js';
@@ -350,7 +349,7 @@ async function initializeApp() {
     }
 
     // Initialize the call service with the service URI
-    const serviceUri = process.env.APP_SERVICE_URI || window.API_CONFIG.SERVICE_URI;
+    const serviceUri = process.env.APP_SERVICE_URI;
     console.log('Initializing CallService with URI:', serviceUri);
     callService = new CallService(serviceUri);
 
@@ -849,6 +848,7 @@ async function handleConnect() {
 
     // Get conversation using the package
     conversation = await callService.getConversationAsync(callData.jobId, token);
+    window.conversation = conversation; // Make conversation available globally
     setupConversationHandlers(conversation);
 
     // Hide loading overlay
@@ -1025,7 +1025,7 @@ async function startCall(claimId, token) {
       'refresh_token': localStorage.getItem('refreshToken') || '',
     };
 
-    const claimsUrl = process.env.APP_CLAIMS_URL || window.API_CONFIG.CLAIMS_URL;
+    const claimsUrl = process.env.APP_CLAIMS_URL;
     const fullUrl = `${claimsUrl}/api/v1/claims/${claimId}/calls`;
     const response = await fetch(fullUrl, {
       method: 'POST',
@@ -1136,7 +1136,7 @@ async function checkJobStatus(jobId, token) {
       'refresh_token': localStorage.getItem('refreshToken') || '',
     };
 
-    const claimsUrl = process.env.APP_CLAIMS_URL || window.API_CONFIG.CLAIMS_URL;
+    const claimsUrl = process.env.APP_CLAIMS_URL;
     const fullUrl = `${claimsUrl}/api/v1/calls/${jobId}`;
     const response = await fetch(fullUrl, {
       method: 'GET',

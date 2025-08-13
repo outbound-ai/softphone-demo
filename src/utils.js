@@ -26,7 +26,7 @@
  */
 
 // API URLs - use config from window or fallback to defaults
-// Note: API_CONFIG is now provided by config.js, fallback only if not available
+// Configuration is now provided by environment variables
 
 /**
  * Call Participant Type Enumeration
@@ -334,15 +334,12 @@ function updateParticipantMapping() {
  * @returns {string} Preferred tenant ID
  *
   * Functionality:
- * 1. Config Check: Checks for API_CONFIG.PREFERRED_TENANT
- * 2. Default Value: Uses hardcoded default if no configuration found
+ * 1. Environment Check: Checks for process.env.APP_PREFERRED_TENANT
+ * 2. Default Value: Uses environment variable if available
  *
  * Configuration Priority:
- * 1. API_CONFIG.PREFERRED_TENANT (configuration object)
- * 2. Default tenant ID (hardcoded fallback)
- *
- * Default Tenant ID:
- * - 86ba559a-4939-4559-b4b8-2bb565d1f010
+ * 1. process.env.APP_PREFERRED_TENANT (environment variable)
+ * 2. null if not configured
  *
  * Usage Example:
  * const tenantId = getPreferredTenant();
@@ -350,8 +347,8 @@ function updateParticipantMapping() {
  */
 function getPreferredTenant() {
   // This can be configured based on your needs
-  // For now, return a default tenant or get from config
-  return API_CONFIG.PREFERRED_TENANT || '86ba559a-4939-4559-b4b8-2bb565d1f010';
+  // For now, return the environment variable if available
+  return process.env.APP_PREFERRED_TENANT;
 }
 
 /**
@@ -372,7 +369,7 @@ function getPreferredTenant() {
  * - generateDTMFTone: Generate DTMF tones for dialpad
  * - getPreferredTenant: Get preferred tenant ID
  *
- * Note: API_CONFIG is already exported by config.js
+ * Note: Configuration is now handled by environment variables
  *
  * Purpose: Makes utility functions and constants available globally
  * for use by other modules in the application.
