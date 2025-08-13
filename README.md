@@ -43,8 +43,3 @@ npm start
 - `public/` — Static assets
 - `archive/` (react-demo) — Experimental and legacy code
 
-## License
-MIT
-
-## Author
-Outbound AI
