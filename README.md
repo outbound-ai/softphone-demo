@@ -1,58 +1,50 @@
-# Softphone Demo Application
+# Softphone Demo
 
-A browser-based softphone demo application for real-time voice communication with AI and human agents.
+This repository contains two demo projects for building a softphone application:
 
-## Setup and Run
+- **javascript-demo**: A vanilla JavaScript implementation.
+- **react-demo**: A React-based implementation with TypeScript.
+
+## Project Structure
+
+- `javascript-demo/` — Simple JavaScript demo with Vite for development.
+- `react-demo/` — React + TypeScript demo, includes archived experiments and components.
+
+## Getting Started
 
 ### Prerequisites
-
-- Node.js (v16 or higher)
+- Node.js (v16 or higher recommended)
 - npm or yarn
-- Vite (will be installed as a dev dependency)
 
-### Installation
+### Setup
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-   This will install all dependencies including Vite as a development dependency.
-
-2. **Configure environment variables**
-   ```bash
-   cp env.example .env
-   ```
-
-   Edit `.env` with your configuration values.
-
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open in browser**
-   - Navigate to `http://localhost:3030`
-   - Authenticate with Keycloak
-   - Enter a claim ID to start a call
-
-### Available Scripts
-
+#### 1. JavaScript Demo
 ```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run preview  # Preview production build
-npm run serve    # Start fallback server
+cd javascript-demo
+npm install
+npm run dev
 ```
 
+#### 2. React Demo
+```bash
+cd react-demo
+npm install
+npm start
+```
 
+## Features
+- Audio worklet integration
+- Softphone UI components
+- Authentication and utility modules
+- Example audio processors and experiments
 
-### Quick Usage
+## Folder Overview
+- `src/` — Main source code for each demo
+- `public/` — Static assets
+- `archive/` (react-demo) — Experimental and legacy code
 
-1. **Start a call**: Enter claim ID and click "Connect"
-2. **Take over**: Click "Take Over" when human agent is available
-3. **Audio controls**: Use mute buttons for speaker/microphone
-4. **Dialpad**: Send DTMF tones after taking over
-5. **Text-to-speech**: Type messages in the speech input field
+## License
+MIT
 
-
+## Author
+Outbound AI
