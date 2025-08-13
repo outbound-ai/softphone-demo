@@ -1,0 +1,74 @@
+#softphone {
+  margin: 25px;
+}
+
+#softphone #transcript {
+  padding: 10px;
+  border: 1px solid gray;
+  width: 800px;
+  height: 500px;
+  overflow-y: auto;
+}
+
+#softphone #transcript .message {
+  border: 1px solid gray;
+  padding: 5px;
+  margin: 10px 0;
+}
+
+#softphone .controls {
+  margin: 20px 0;
+}
+
+#softphone .controls input {
+  width: 300px;
+  margin: 0 0 0 10px;
+}
+
+#softphone .controls input[type=submit] {
+  width: 100px;
+  margin: 10px 0 0 10px;
+}
+
+#softphone .dialpad {
+  display: flex;
+  flex-direction: column;
+}
+
+#softphone .row {
+  display: flex;
+  margin-top: 5px
+}
+
+#softphone .dtmf {
+  min-width: 75px;
+  min-height: 75px;
+  margin: 0 5px 0 0;
+  padding: 0;
+}
+
+#softphone .bold {
+  font-size: 125%;
+  font-weight: bolder;
+}
+
+#softphone .light {
+  color: gray;
+  font-weight: light;
+}
+
+#softphone .dtmf.green {
+  background-color: palegreen;
+}
+
+#softphone .dtmf.yellow {
+  background-color: palegoldenrod;
+}
+
+#softphone .dtmf.blue {
+  background-color: paleturquoise;
+}
+
+#softphone .transcript {
+  margin: 0 0 10px 0;
+}
