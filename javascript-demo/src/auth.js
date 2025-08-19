@@ -27,11 +27,11 @@ let refreshToken = null;
 let currentUser = null;
 let isKeycloakInitialized = false;
 
-// Keycloak configuration
+// Keycloak configuration - handle quoted environment variables
 const keycloakConfig = {
-  url: process.env.APP_KEYCLOAK_URL,
-  realm: process.env.APP_KEYCLOAK_REALM,
-  clientId: process.env.APP_KEYCLOAK_CLIENT_ID
+  url: (process.env.APP_KEYCLOAK_URL || '').replace(/^\"|\"$/g, '').replace(/\/$/, ''), // Remove quotes and trailing slash
+  realm: (process.env.APP_KEYCLOAK_REALM || '').replace(/^\"|\"$/g, ''), // Remove quotes
+  clientId: (process.env.APP_KEYCLOAK_CLIENT_ID || '').replace(/^\"|\"$/g, '') // Remove quotes
 };
 
 let keycloakInstance = null;
@@ -627,7 +627,7 @@ async function fetchPreferredTenant() {
       return null;
     }
 
-    const claimsUrl = process.env.APP_CLAIMS_URL;
+    const claimsUrl = (process.env.APP_CLAIMS_URL || '').replace(/^\"|\"$/g, ''); // Remove quotes from environment variable
 
     const response = await fetch(`${claimsUrl}/api/v1/tenants/preferred`, {
       method: 'GET',

@@ -1,6 +1,5 @@
 # Softphone Demo Application
 
-A browser-based softphone demo application for real-time voice communication with AI and human agents.
 
 ## Setup and Run
 

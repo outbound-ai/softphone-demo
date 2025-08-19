@@ -41,15 +41,27 @@ const server = http.createServer((req, res) => {
   // Get the file path - check different directories in order
   let filePath;
 
-  // Check public directory first for audio worklets
-  filePath = path.join(__dirname, 'public', pathname);
+  // 1) Prefer production build output (dist) if present
+  filePath = path.join(__dirname, 'dist', pathname);
+  if (!fs.existsSync(filePath) && pathname === '/index.html') {
+    // Explicitly fall back to dist/index.html for root requests
+    const distIndex = path.join(__dirname, 'dist', 'index.html');
+    if (fs.existsSync(distIndex)) {
+      filePath = distIndex;
+    }
+  }
 
-  // If file doesn't exist in public, check root directory
+  // 2) Check public directory (e.g., audio worklets)
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(__dirname, 'public', pathname);
+  }
+
+  // 3) Check project root (source files - for dev convenience)
   if (!fs.existsSync(filePath)) {
     filePath = path.join(__dirname, pathname);
   }
 
-  // If file doesn't exist in root, check node_modules
+  // 4) Finally, check node_modules
   if (!fs.existsSync(filePath)) {
     filePath = path.join(__dirname, 'node_modules', pathname);
   }

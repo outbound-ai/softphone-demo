@@ -48,10 +48,15 @@ export default defineConfig(({ mode }) => {
       'process.env': {
         NODE_ENV: JSON.stringify(env.NODE_ENV || 'development'),
         PUBLIC_URL: JSON.stringify('/'),
-        ...Object.keys(env).reduce((acc, key) => {
-          acc[key] = env[key];
-          return acc;
-        }, {})
+        // Only expose APP_* environment variables for security
+        APP_CLAIMS_URL: JSON.stringify(env.APP_CLAIMS_URL || ''),
+        APP_SERVICE_URI: JSON.stringify(env.APP_SERVICE_URI || ''),
+        APP_TENANT_ROLE_USER_URL: JSON.stringify(env.APP_TENANT_ROLE_USER_URL || ''),
+        APP_PREFERRED_TENANT: JSON.stringify(env.APP_PREFERRED_TENANT || ''),
+        APP_KEYCLOAK_URL: JSON.stringify(env.APP_KEYCLOAK_URL || ''),
+        APP_KEYCLOAK_REALM: JSON.stringify(env.APP_KEYCLOAK_REALM || ''),
+        APP_KEYCLOAK_CLIENT_ID: JSON.stringify(env.APP_KEYCLOAK_CLIENT_ID || ''),
+        APP_REDIRECT_URI: JSON.stringify(env.APP_REDIRECT_URI || '')
       }
     }
   };

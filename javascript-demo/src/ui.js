@@ -509,6 +509,55 @@ function updateAuthStatus(status, user = null) {
  * showError('Connection failed');
  * showError({ detail: 'API error message', status: 403 });
  */
+/**
+ * Sanitizes error messages to remove sensitive data like IDs and tokens.
+ *
+ * @param {string} message - The error message to sanitize
+ * @returns {string} - Sanitized error message
+ */
+function sanitizeErrorMessage(message) {
+  if (typeof message !== 'string') {
+    return message;
+  }
+
+  // Remove UUIDs and IDs completely (including field names)
+  let sanitized = message
+    // Remove UUID patterns (8-4-4-4-12 format)
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
+    // Remove ID field patterns completely (including field names)
+    .replace(/OaiClaimId=[^,\s]*/gi, '')
+    .replace(/User=[^,\s]*/gi, '')
+    .replace(/claimId=[^,\s]*/gi, '')
+    .replace(/jobId=[^,\s]*/gi, '')
+    .replace(/tenantId=[^,\s]*/gi, '')
+    .replace(/clientId=[^,\s]*/gi, '')
+    .replace(/realm=[^,\s]*/gi, '')
+    .replace(/oaiClaimId=[^,\s]*/gi, '')
+    .replace(/userId=[^,\s]*/gi, '')
+    .replace(/sessionId=[^,\s]*/gi, '')
+    .replace(/requestId=[^,\s]*/gi, '')
+    .replace(/correlationId=[^,\s]*/gi, '')
+    // Remove any remaining UUID-like patterns
+    .replace(/[0-9a-f]{32}/gi, '')
+    // Remove token patterns
+    .replace(/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, '')
+    .replace(/token=[A-Za-z0-9\-._~+/]+=*/gi, '')
+    // Remove URLs with sensitive data
+    .replace(/https?:\/\/[^\s]+/gi, '')
+    // Remove email addresses
+    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, '');
+
+  // Clean up any extra commas, spaces, or formatting left after removing IDs
+  sanitized = sanitized
+    .replace(/,\s*,/g, ',') // Remove double commas
+    .replace(/^\s*,\s*/g, '') // Remove leading comma
+    .replace(/,\s*$/g, '') // Remove trailing comma
+    .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
+    .trim(); // Remove leading/trailing whitespace
+
+  return sanitized;
+}
+
 function showError(message, title = 'Error') {
   const errorToast = document.getElementById('errorToast');
   const errorMessage = document.getElementById('errorMessage');
@@ -535,13 +584,16 @@ function showError(message, title = 'Error') {
       }
     }
 
+    // Sanitize the message to remove sensitive data
+    displayMessage = sanitizeErrorMessage(displayMessage);
+
     // Truncate long messages for toast (except for specific error types)
     if (shouldTruncate && displayMessage.length > 200) {
       displayMessage = displayMessage.substring(0, 200) + '...';
     }
 
     errorMessage.textContent = displayMessage;
-    errorToast.style.display = 'block';
+    errorToast.classList.add('show');
 
     // Auto-hide after 8 seconds (longer for detailed errors)
     const autoHideTime = shouldTruncate ? 8000 : 12000;
@@ -571,7 +623,7 @@ function showError(message, title = 'Error') {
 function hideError() {
   const errorToast = document.getElementById('errorToast');
   if (errorToast) {
-    errorToast.style.display = 'none';
+    errorToast.classList.remove('show');
   }
 }
 
@@ -632,24 +684,151 @@ function updateAuthMessage(message) {
 function showHumanRepresentativeNotification(message) {
   console.log('Human representative notification function called:', message);
 
-  // Show a confirmation dialog
-  console.log('Showing confirmation dialog...');
-  if (window.confirm("Payer agent is ready to take over. Do you want to take over?")) {
-    console.log('User confirmed take over');
-    if (window.handleTakeOver) {
-      window.handleTakeOver();
-    } else {
-      console.error('handleTakeOver function not found!');
+  // Create a custom notification popup
+  const notification = document.createElement('div');
+  notification.className = 'takeover-notification';
+  notification.innerHTML = `
+    <div class="notification-content">
+      <h3>Human Agent Available</h3>
+      <p>Payer agent is ready to take over the call.</p>
+      <div class="notification-buttons">
+        <button class="btn-primary" onclick="acceptTakeover()">Take Over</button>
+        <button class="btn-secondary" onclick="declineTakeover()">Decline</button>
+      </div>
+    </div>
+  `;
+
+  // Add to page
+  document.body.appendChild(notification);
+
+  // Start notification sound
+  startNotificationSound();
+
+  // Auto-hide after 30 seconds
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+      stopNotificationSound();
     }
-  } else {
-    console.log('User cancelled take over');
-  }
+  }, 30000);
 
   // Add to transcript
   if (window.appendTranscriptMessage) {
     window.appendTranscriptMessage(null, 'system', 'Human representative is available for take over');
   }
 }
+
+// Sound control functions
+let notificationAudio = null;
+let notificationInterval = null;
+
+function startNotificationSound() {
+  try {
+    // Create audio element if it doesn't exist
+    if (!notificationAudio) {
+      notificationAudio = new Audio();
+      // Create a simple ding-dong sound using Web Audio API
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Create ding-dong pattern
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.2);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.4);
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.6);
+
+      // Store the audio context for cleanup
+      notificationAudio = audioContext;
+    }
+
+    // Play sound every 2 seconds
+    notificationInterval = setInterval(() => {
+      if (notificationAudio && notificationAudio.state === 'suspended') {
+        notificationAudio.resume();
+      }
+
+      const oscillator = notificationAudio.createOscillator();
+      const gainNode = notificationAudio.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(notificationAudio.destination);
+
+      // Create ding-dong pattern
+      oscillator.frequency.setValueAtTime(800, notificationAudio.currentTime);
+      oscillator.frequency.setValueAtTime(600, notificationAudio.currentTime + 0.2);
+      oscillator.frequency.setValueAtTime(800, notificationAudio.currentTime + 0.4);
+
+      gainNode.gain.setValueAtTime(0.3, notificationAudio.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, notificationAudio.currentTime + 0.6);
+
+      oscillator.start(notificationAudio.currentTime);
+      oscillator.stop(notificationAudio.currentTime + 0.6);
+    }, 2000);
+
+    console.log('Notification sound started');
+  } catch (error) {
+    console.error('Error starting notification sound:', error);
+  }
+}
+
+function stopNotificationSound() {
+  try {
+    if (notificationInterval) {
+      clearInterval(notificationInterval);
+      notificationInterval = null;
+    }
+    if (notificationAudio) {
+      notificationAudio.close();
+      notificationAudio = null;
+    }
+    console.log('Notification sound stopped');
+  } catch (error) {
+    console.error('Error stopping notification sound:', error);
+  }
+}
+
+// Global functions for the notification buttons
+window.acceptTakeover = function() {
+  console.log('User accepted take over');
+  stopNotificationSound();
+  const notification = document.querySelector('.takeover-notification');
+  if (notification && notification.parentNode) {
+    notification.parentNode.removeChild(notification);
+  }
+  if (window.handleTakeOver) {
+    window.handleTakeOver();
+  } else {
+    console.error('handleTakeOver function not found!');
+  }
+};
+
+window.declineTakeover = function() {
+  console.log('User declined take over');
+  stopNotificationSound();
+  const notification = document.querySelector('.takeover-notification');
+  if (notification && notification.parentNode) {
+    notification.parentNode.removeChild(notification);
+  }
+};
+
+// Test function to manually trigger the notification
+window.testTakeoverNotification = function() {
+  console.log('Testing takeover notification...');
+  if (window.showHumanRepresentativeNotification) {
+    window.showHumanRepresentativeNotification('Test notification');
+  } else {
+    console.error('showHumanRepresentativeNotification function not found!');
+  }
+};
 
 
 /**

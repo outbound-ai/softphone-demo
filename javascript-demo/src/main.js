@@ -349,7 +349,7 @@ async function initializeApp() {
     }
 
     // Initialize the call service with the service URI
-    const serviceUri = process.env.APP_SERVICE_URI;
+    const serviceUri = (process.env.APP_SERVICE_URI || '').replace(/^\"|\"$/g, ''); // Remove quotes from environment variable
     console.log('Initializing CallService with URI:', serviceUri);
     callService = new CallService(serviceUri);
 
@@ -368,6 +368,8 @@ async function initializeApp() {
       console.error('Event listeners setup failed:', error);
       console.error('Error details:', error.message);
     }
+
+
 
     // Hide auth loading overlay
     try {
@@ -439,6 +441,15 @@ function setupConversationHandlers(conversation) {
       if (window.updateAudioStatus) {
         window.updateAudioStatus();
       }
+
+          // Clear UI and reload page when connection is lost (call ends)
+    if (!connected) {
+      clearUIAfterCall();
+      // Reload page after a short delay to ensure fresh state for next call
+      setTimeout(() => {
+        reloadPageAfterCall();
+      }, 1000); // 1 second delay to allow UI to update
+    }
     };
 
     conversation.onTranscriptAvailable = (participantId, participantType, text) => {
@@ -450,6 +461,10 @@ function setupConversationHandlers(conversation) {
 
     conversation.onHoldForHumanEvent = async (message) => {
       console.log('Hold for human event:', message);
+      console.log('Message type:', typeof message);
+      console.log('Message value:', message);
+      console.log('takeOverType:', takeOverType);
+      console.log('showHumanRepresentativeNotification available:', !!window.showHumanRepresentativeNotification);
 
       // Only trigger when message is "stop" and we haven't taken over yet
       if (message === "stop" && takeOverType === null) {
@@ -465,6 +480,10 @@ function setupConversationHandlers(conversation) {
         } else {
           console.error('showHumanRepresentativeNotification function not found!');
         }
+      } else {
+        console.log('Condition not met: message !== "stop" or takeOverType !== null');
+        console.log('message === "stop":', message === "stop");
+        console.log('takeOverType === null:', takeOverType === null);
       }
     };
   }
@@ -526,6 +545,8 @@ function setupEventListeners() {
   if (endCallBtn) {
     endCallBtn.addEventListener('click', handleDisconnect);
   }
+
+
 
   // Mute speaker button
   const muteSpeakerBtn = document.getElementById('muteSpeakerBtn');
@@ -822,11 +843,11 @@ async function handleConnect() {
       throw new Error('Please enter a valid claim ID or URL in the input field');
     }
 
-    console.log('Starting call for claim:', claimId);
+    console.log('Starting call for claim:', '[ID]');
 
     // Start call using the package
     const callData = await startCall(claimId, token);
-    console.log('Call started successfully:', callData);
+    console.log('Call started successfully:', '[CALL_DATA]');
 
     // Wait for job to be ready (status 2 indicates ready for WebSocket connection)
     let jobStatus = await checkJobStatus(callData.jobId, token);
@@ -841,7 +862,7 @@ async function handleConnect() {
     }
 
     if (jobStatus.status !== 2) {
-      throw new Error(`Job did not reach ready state after ${maxRetries} seconds. Current status: ${jobStatus.status}`);
+      throw new Error(`Job did not reach ready state after ${maxRetries} seconds.`);
     }
 
     console.log('Job is ready for WebSocket connection');
@@ -910,6 +931,50 @@ async function handleConnect() {
  * Usage Example:
  * handleDisconnect();
  */
+function clearUIAfterCall() {
+  try {
+    // Clear the claim ID input field
+    const claimIdInput = document.getElementById('claimId');
+    if (claimIdInput) {
+      claimIdInput.value = '';
+    }
+
+    // Clear the transcript
+    const transcriptDiv = document.getElementById('transcript');
+    if (transcriptDiv) {
+      transcriptDiv.innerHTML = '';
+    }
+
+    // Clear the speech input field
+    const speechInput = document.getElementById('speechInput');
+    if (speechInput) {
+      speechInput.value = '';
+    }
+
+    console.log('UI cleared after call ended');
+  } catch (error) {
+    console.error('Error clearing UI:', error);
+  }
+}
+
+/**
+ * Reloads the page after a call ends.
+ *
+ * This function provides an alternative to clearing the UI by reloading
+ * the entire page, which ensures a completely fresh state.
+ *
+ * Usage Example:
+ * reloadPageAfterCall();
+ */
+function reloadPageAfterCall() {
+  try {
+    console.log('Reloading page after call ended');
+    window.location.reload();
+  } catch (error) {
+    console.error('Error reloading page:', error);
+  }
+}
+
 function handleDisconnect() {
   try {
     console.log('Disconnecting...');
@@ -951,6 +1016,14 @@ function handleDisconnect() {
     if (window.updateCallStatus) {
       window.updateCallStatus(false);
     }
+
+    // Clear UI fields after disconnection
+    clearUIAfterCall();
+
+    // Reload page after a short delay to ensure fresh state for next call
+    setTimeout(() => {
+      reloadPageAfterCall();
+    }, 1000); // 1 second delay to allow UI to update
 
     console.log('Disconnected successfully');
   } catch (error) {
@@ -1015,7 +1088,7 @@ function handleDisconnect() {
  */
 async function startCall(claimId, token) {
   try {
-    console.log('Starting call for claim:', claimId);
+    console.log('Starting call for claim:', '[ID]');
 
     // Build headers
     const headers = {
@@ -1025,7 +1098,7 @@ async function startCall(claimId, token) {
       'refresh_token': localStorage.getItem('refreshToken') || '',
     };
 
-    const claimsUrl = process.env.APP_CLAIMS_URL;
+    const claimsUrl = (process.env.APP_CLAIMS_URL || '').replace(/^\"|\"$/g, ''); // Remove quotes from environment variable
     const fullUrl = `${claimsUrl}/api/v1/claims/${claimId}/calls`;
     const response = await fetch(fullUrl, {
       method: 'POST',
@@ -1060,7 +1133,7 @@ async function startCall(claimId, token) {
     }
 
     const data = await response.json();
-    console.log('Call started successfully:', data);
+    console.log('Call started successfully:', '[CALL_DATA]');
 
     // Clear any existing errors on success
     if (window.hideError) {
@@ -1126,7 +1199,7 @@ async function startCall(claimId, token) {
  */
 async function checkJobStatus(jobId, token) {
   try {
-    console.log('Checking job status for:', jobId);
+    console.log('Checking job status for:', '[ID]');
 
     // Build headers
     const headers = {
@@ -1136,7 +1209,7 @@ async function checkJobStatus(jobId, token) {
       'refresh_token': localStorage.getItem('refreshToken') || '',
     };
 
-    const claimsUrl = process.env.APP_CLAIMS_URL;
+    const claimsUrl = (process.env.APP_CLAIMS_URL || '').replace(/^\"|\"$/g, ''); // Remove quotes from environment variable
     const fullUrl = `${claimsUrl}/api/v1/calls/${jobId}`;
     const response = await fetch(fullUrl, {
       method: 'GET',
@@ -1167,7 +1240,7 @@ async function checkJobStatus(jobId, token) {
     }
 
     const data = await response.json();
-    console.log('Job status:', data);
+    console.log('Job status:', '[JOB_DATA]');
 
     // Clear any existing errors on success
     if (window.hideError) {
@@ -1229,6 +1302,8 @@ window.handleConnect = handleConnect;
 window.handleDisconnect = handleDisconnect;
 window.handleTakeOver = handleTakeOver;
 window.isAgentReady = () => payerAgentReady;
+window.clearUIAfterCall = clearUIAfterCall;
+window.reloadPageAfterCall = reloadPageAfterCall;
 
 // Payer agent ready state tracking
 let lastPayerAgentReady = false;

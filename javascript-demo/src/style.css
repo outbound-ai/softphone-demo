@@ -856,15 +856,101 @@ body {
   border-left: 4px solid #c82333;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: space-between;
+  flex-direction: row;
+}
+
+.error-toast.show {
+  display: flex !important;
+}
+
+/* Takeover Notification */
+.takeover-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 2px solid rgb(34, 123, 187);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  min-width: 450px;
+  max-width: 600px;
+  animation: slideInDown 0.3s ease-out;
+}
+
+.notification-content {
+  padding: 24px;
+  text-align: center;
+}
+
+.notification-content h3 {
+  color: rgb(34, 123, 187);
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.notification-content p {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.notification-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.notification-buttons button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-buttons .btn-primary {
+  background: rgb(34, 123, 187);
+  color: white;
+}
+
+.notification-buttons .btn-primary:hover {
+  background: rgb(28, 100, 152);
+}
+
+.notification-buttons .btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.notification-buttons .btn-secondary:hover {
+  background: #5a6268;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .error-toast span {
   flex: 1;
   font-size: 13px;
   line-height: 1.3;
+  margin-right: 8px;
 }
 
 .error-toast button {
@@ -877,11 +963,12 @@ body {
   height: 20px;
   border-radius: 50%;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
   margin-left: 8px;
+  flex-direction: row !important;
 }
 
 /* Removed hover effect for error toast button */
@@ -980,12 +1067,16 @@ body {
 }
 
 @media (max-width: 480px) {
-  #softphone .error-toast {
+  .error-toast {
     top: 10px;
     right: 10px;
     left: 10px;
     max-width: none;
     font-size: 12px;
+  }
+
+  .error-toast.show {
+    display: flex !important;
   }
 
   #softphone .header {

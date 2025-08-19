@@ -1,0 +1,24 @@
+node_modules
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+#misc
+*.code-workspace
+
+# terraform
+.terraform
+*.terraform.lock.hcl
+
+#visual studio
+.vs
+.vscode
+
+#rider
+.idea
+*.lock
+.DS_Store
+source/yarn.lock
+source/public/softphoneAudioWorklet
