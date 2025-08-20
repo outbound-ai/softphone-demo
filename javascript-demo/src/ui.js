@@ -526,6 +526,7 @@ function sanitizeErrorMessage(message) {
     .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
     // Remove ID field patterns completely (including field names)
     .replace(/OaiClaimId=[^,\s]*/gi, '')
+    .replace(/OaiClaimnId=[^,\s]*/gi, '') // Handle typo in field name
     .replace(/User=[^,\s]*/gi, '')
     .replace(/claimId=[^,\s]*/gi, '')
     .replace(/jobId=[^,\s]*/gi, '')
@@ -533,6 +534,7 @@ function sanitizeErrorMessage(message) {
     .replace(/clientId=[^,\s]*/gi, '')
     .replace(/realm=[^,\s]*/gi, '')
     .replace(/oaiClaimId=[^,\s]*/gi, '')
+    .replace(/oaiClaimnId=[^,\s]*/gi, '') // Handle typo in field name
     .replace(/userId=[^,\s]*/gi, '')
     .replace(/sessionId=[^,\s]*/gi, '')
     .replace(/requestId=[^,\s]*/gi, '')
