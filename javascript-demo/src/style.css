@@ -1,0 +1,1114 @@
+/**
+ * Softphone Demo Styles - Enhanced Design
+ *
+ * This CSS file contains all the styling for the softphone application.
+ * It provides a modern, responsive design with enhanced user experience
+ * features including animations, visual feedback, and accessibility.
+ *
+ * Key Features:
+ * - Modern, clean design with consistent color scheme
+ * - Responsive layout that adapts to different screen sizes
+ * - Visual feedback for connection status and user interactions
+ * - Accessibility features and keyboard navigation support
+ * - Smooth animations and transitions
+ * - Error handling with toast notifications
+ * - Loading states and overlays
+ *
+ * Color Scheme:
+ * - Primary: rgb(34, 123, 187) - Blue for primary actions
+ * - Success: rgb(34, 82, 15) - Green for success states
+ * - Danger: rgb(213, 63, 63) - Red for errors and danger
+ * - Background: White and light grays for clean appearance
+ *
+ * Layout Structure:
+ * - Header: Navigation and user information
+ * - Main Content: Controls, transcript, and dialpad
+ * - Footer: Call controls and speech input
+ *
+ * Responsive Breakpoints:
+ * - Desktop: 1024px and above
+ * - Tablet: 768px to 1023px
+ * - Mobile: 480px to 767px
+ * - Small Mobile: Below 480px
+ */
+
+/* Prevent Flash of Unstyled Content */
+body {
+  opacity: 0;
+  transition: opacity 0.1s ease-in;
+}
+
+body.loaded {
+  opacity: 1;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background: #FFF;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  color: #333;
+  line-height: 1.6;
+  overflow: hidden;
+}
+
+#softphone {
+  height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/**
+ * Header Section
+ *
+ * The header contains the application title, connection status indicator,
+ * user welcome message, and logout button. It provides a compact,
+ * professional appearance with clear visual hierarchy.
+ *
+ * Components:
+ * - Application title and branding
+ * - Connection status indicator (connected/disconnected)
+ * - User welcome message with username
+ * - Logout button for authentication
+ *
+ * Visual Features:
+ * - Dark blue background for professional appearance
+ * - Pulsing animation for connection status
+ * - Responsive layout with flexible spacing
+ * - Clear typography and contrast
+ */
+/* Compact Header */
+#softphone .header {
+  background: rgb(9, 31, 90);
+  color: white;
+  padding: 12px 20px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+#softphone .header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+#softphone .header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#softphone .header-left h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+#softphone .header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+#softphone .welcome-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #ecf0f1;
+}
+
+.connected, .disconnected {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+
+.connected {
+  background: linear-gradient(45deg, #27ae60, #2ecc71);
+  box-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+}
+
+.disconnected {
+  background: rgb(213, 63, 63);
+  box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+#softphone .header-right #logoutBtn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-width: 70px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Removed hover effect for logout button */
+
+/**
+ * Main Content Container
+ *
+ * The main content area contains all the primary application components
+ * including controls, transcript panel, dialpad, and call controls.
+ * It uses flexbox layout for optimal space utilization.
+ *
+ * Layout:
+ * - Flexbox column layout for vertical stacking
+ * - Padding for consistent spacing
+ * - Overflow handling for content management
+ * - Responsive design considerations
+ */
+/* Main Content Container */
+#softphone .main-content {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/**
+ * Controls Section
+ *
+ * The controls section contains the primary user input elements
+ * including claim ID input, connection controls, and action buttons.
+ * It provides a clean, organized interface for call management.
+ *
+ * Components:
+ * - Claim ID input field
+ * - Connect/Disconnect buttons
+ * - Take over functionality
+ * - Audio control buttons
+ *
+ * Design Features:
+ * - Card-like appearance with shadow
+ * - Flexible layout with wrapping
+ * - Consistent spacing and alignment
+ * - Clear visual hierarchy
+ */
+/* Controls Section */
+#softphone .controls {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+#softphone .control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+#softphone .input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#softphone .input-row input[type="text"] {
+  flex: 1;
+  min-width: 300px;
+  margin-bottom: 0;
+  padding: 16px 20px;
+  font-size: 16px;
+}
+
+#softphone .control-group label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#softphone input[type="text"] {
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+}
+
+#softphone input[type="text"]:focus {
+  outline: none;
+  border-color: rgb(34, 123, 187);
+}
+
+/**
+ * Button Styling
+ *
+ * Comprehensive button styling for all interactive elements
+ * throughout the application. Provides consistent appearance
+ * and behavior across different button types.
+ *
+ * Button Types:
+ * - Primary: Main action buttons (blue)
+ * - Secondary: Alternative actions (white with border)
+ * - Success: Positive actions (green)
+ * - Danger: Destructive actions (red)
+ *
+ * States:
+ * - Normal: Default appearance
+ * - Disabled: Reduced opacity and no interaction
+ * - Focus: Keyboard navigation support
+ *
+ * Features:
+ * - Consistent padding and typography
+ * - Uppercase text with letter spacing
+ * - Rounded corners for modern appearance
+ * - Disabled state handling
+ */
+/* Button Styling */
+#softphone .controls button,
+#softphone .call-controls button {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 120px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Removed hover effects for control buttons */
+
+/* Removed active effects for control buttons */
+
+#softphone .controls button:disabled,
+#softphone .call-controls button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary:disabled {
+  background: #f8f9fa !important;
+  color: #6c757d !important;
+  border-color: #dee2e6 !important;
+}
+
+.btn-primary {
+  background: rgb(34, 123, 187);
+  color: white;
+}
+
+/* Removed hover effect for primary button */
+
+.btn-secondary {
+  background: white !important;
+  color: rgb(34, 82, 15) !important;
+  border: 2px solid rgb(34, 82, 15) !important;
+}
+
+/* Removed hover effect for secondary button */
+
+.btn-success {
+  background: rgb(34, 82, 15);
+  color: white;
+}
+
+/* Removed hover effect for success button */
+
+.btn-danger {
+  background: rgb(213, 63, 63);
+  color: white;
+}
+
+/* Removed hover effect for danger button */
+
+/**
+ * Content Layout
+ *
+ * Grid-based layout for the main content area that organizes
+ * the transcript panel and dialpad into a responsive two-column
+ * layout. Adapts to different screen sizes automatically.
+ *
+ * Layout Structure:
+ * - Grid with two columns: transcript (flexible) and dialpad (fixed width)
+ * - Responsive breakpoints for mobile adaptation
+ * - Flexible height management with overflow handling
+ *
+ * Grid Configuration:
+ * - Desktop: 1fr (transcript) + 320px (dialpad)
+ * - Mobile: Single column layout
+ * - Gap: 20px between columns
+ */
+/* Content Layout */
+#softphone .content {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  margin-bottom: 15px;
+  flex: 1;
+  min-height: 0;
+}
+
+/**
+ * Transcript Panel
+ *
+ * The transcript panel displays the conversation history and
+ * real-time messages during calls. It provides a scrollable
+ * interface with message categorization and visual styling.
+ *
+ * Features:
+ * - Scrollable message container
+ * - Message categorization (inbound, outbound, AI, system)
+ * - Timestamp display for each message
+ * - Visual indicators for different message types
+ * - Auto-scroll to latest messages
+ *
+ * Message Types:
+ * - Inbound: Messages from external participants (blue)
+ * - Outbound: Messages from browser user (green)
+ * - AI: Messages from AI agent (cyan)
+ * - System: System notifications (gray, italic)
+ *
+ * Styling:
+ * - Card-like appearance with shadow
+ * - Custom scrollbar styling
+ * - Message bubbles with left border indicators
+ * - Responsive typography
+ */
+/* Transcript Panel */
+#softphone .transcript-panel {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#softphone .transcript-panel h4 {
+  margin: 0 0 20px 0;
+  color: #2c3e50;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#softphone .transcript-panel h4::before {
+  content: "💬";
+  font-size: 24px;
+}
+
+#softphone #transcript {
+  border: 1px solid #e9ecef;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f1f5f9;
+  min-height: 0;
+}
+
+#softphone #transcript::-webkit-scrollbar {
+  width: 8px;
+}
+
+#softphone #transcript::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+#softphone #transcript::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+#softphone .transcript {
+  background: white;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-left: 4px solid rgb(34, 123, 187);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Removed hover effect for transcript items */
+
+#softphone .transcript .bold {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+#softphone .transcript div:last-child {
+  color: #495057;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+/* Transcript message types */
+#softphone .transcript .inbound {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+#softphone .transcript .outbound {
+  color: rgb(34, 82, 15);
+  font-weight: 500;
+}
+
+#softphone .transcript .system {
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+#softphone .transcript .ai {
+  color: #17a2b8;
+  font-weight: 500;
+}
+
+#softphone .transcript .bold.inbound {
+  color: rgb(34, 123, 187);
+}
+
+#softphone .transcript .bold.outbound {
+  color: rgb(34, 82, 15);
+}
+
+#softphone .transcript .bold.system {
+  color: #95a5a6;
+}
+
+#softphone .transcript .bold.ai {
+  color: #17a2b8;
+}
+
+/**
+ * Dialpad Panel
+ *
+ * The dialpad panel provides a telephone-style keypad interface
+ * for sending DTMF tones during calls. It includes standard
+ * telephone keys with visual feedback and accessibility features.
+ *
+ * Features:
+ * - 3x4 grid layout for standard telephone keys
+ * - DTMF tone generation for each key
+ * - Visual feedback for button states
+ * - Accessibility support for keyboard navigation
+ * - Responsive design for mobile devices
+ *
+ * Key Layout:
+ * - Numbers: 1-9 in 3x3 grid
+ * - Special keys: *, 0, # in bottom row
+ * - Letters: A-D for additional functionality
+ *
+ * Interaction:
+ * - Click/touch for tone generation
+ * - Visual feedback for pressed state
+ * - Disabled state when not connected or not taken over
+ * - Opacity changes for visual state indication
+ */
+/* Dialpad Panel */
+#softphone .dialpad-panel {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#softphone .dialpad-panel h4 {
+  margin: 0 0 20px 0;
+  color: #2c3e50;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#softphone .dialpad-panel h4::before {
+  content: "📞";
+  font-size: 24px;
+}
+
+#softphone .dialpad {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+}
+
+#softphone .row {
+  display: flex;
+  gap: 12px;
+}
+
+#softphone .dtmf {
+  flex: 1;
+  min-height: 50px;
+  background: #f8f9fa;
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Removed hover and active effects for DTMF buttons */
+
+#softphone .dtmf .bold {
+  font-weight: 700;
+  font-size: 20px;
+  color: #2c3e50;
+  position: relative;
+  z-index: 1;
+}
+
+#softphone .dtmf div:last-child {
+  font-size: 10px;
+  color: #6c757d;
+  margin-top: 4px;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+/**
+ * Speech Form
+ *
+ * The speech form provides text-to-speech functionality for
+ * sending typed messages during calls. It includes an input
+ * field and submit button with appropriate styling and states.
+ *
+ * Features:
+ * - Text input for speech synthesis
+ * - Submit button for sending messages
+ * - Disabled state when not connected
+ * - Responsive layout for mobile devices
+ * - Clear visual feedback for user interactions
+ *
+ * Functionality:
+ * - Text input with focus states
+ * - Submit button with loading states
+ * - Form validation and error handling
+ * - Accessibility features for screen readers
+ *
+ * States:
+ * - Normal: Fully functional
+ * - Disabled: When not connected to call
+ * - Focus: Keyboard navigation support
+ * - Error: Validation feedback
+ */
+/* Speech Form */
+#softphone .speech-form {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  margin-bottom: 15px;
+}
+
+#softphone .speech-form input[type="text"] {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+#softphone .speech-form input[type="text"]:focus {
+  outline: none;
+  border-color: rgb(34, 123, 187);
+}
+
+#softphone .speech-form input[type="text"]:disabled {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+#softphone .speech-form button[type="submit"] {
+  padding: 12px 24px;
+  background: rgb(34, 123, 187);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 100px;
+  pointer-events: auto;
+  z-index: 10;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Removed hover effect for speech form button */
+
+#softphone .speech-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/**
+ * Call Controls
+ *
+ * The call controls section contains the primary call management
+ * buttons including connect, disconnect, take over, and audio
+ * control buttons. It provides a centralized location for
+ * call-related actions.
+ *
+ * Features:
+ * - Horizontal layout with flexible wrapping
+ * - Centered alignment for visual balance
+ * - Responsive design for mobile devices
+ * - Consistent button styling and spacing
+ *
+ * Button Types:
+ * - Connect: Start new call
+ * - Disconnect: End current call
+ * - Take Over: Human agent takeover
+ * - Audio Controls: Mute speaker/microphone
+ *
+ * Layout:
+ * - Flexbox with gap spacing
+ * - Wrap support for smaller screens
+ * - Center alignment for visual appeal
+ */
+/* Call Controls */
+#softphone .call-controls {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/**
+ * Loading Overlay
+ *
+ * The loading overlay provides visual feedback during application
+ * initialization and long-running operations. It includes a
+ * spinner animation and descriptive text.
+ *
+ * Features:
+ * - Full-screen overlay with backdrop blur
+ * - Animated spinner for visual feedback
+ * - Descriptive text for user information
+ * - High z-index for overlay positioning
+ * - Smooth animations and transitions
+ *
+ * Visual Elements:
+ * - Semi-transparent dark background
+ * - Rotating spinner with blue accent
+ * - White text with shadow for readability
+ * - Backdrop blur for modern appearance
+ *
+ * Animation:
+ * - Spinner rotation: 1 second linear infinite
+ * - Smooth fade-in/out transitions
+ * - Responsive sizing for different screens
+ */
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.loading-overlay p {
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/**
+ * Error Toast
+ *
+ * The error toast provides user-friendly error notifications
+ * that appear in the top-right corner of the screen. It includes
+ * error messages with auto-hide functionality and close button.
+ *
+ * Features:
+ * - Fixed positioning in top-right corner
+ * - Auto-hide functionality with configurable timing
+ * - Close button for manual dismissal
+ * - Responsive design for mobile devices
+ * - Word wrapping for long error messages
+ *
+ * Visual Design:
+ * - Red background with white text
+ * - Left border accent for visual emphasis
+ * - Shadow for depth and prominence
+ * - Rounded corners for modern appearance
+ *
+ * Animation:
+ * - Slide-in from right on appearance
+ * - Smooth transitions for state changes
+ * - Auto-hide with fade-out effect
+ *
+ * Content:
+ * - Error message with word wrapping
+ * - Close button with hover effects
+ * - Flexible width with maximum constraints
+ */
+/* Error Toast */
+.error-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #dc3545;
+  color: white;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+  z-index: 1000;
+  max-width: 500px;
+  min-width: 300px;
+  animation: slideInRight 0.3s ease-out;
+  border-left: 4px solid #c82333;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: row;
+}
+
+.error-toast.show {
+  display: flex !important;
+}
+
+/* Takeover Notification */
+.takeover-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 2px solid rgb(34, 123, 187);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  min-width: 450px;
+  max-width: 600px;
+  animation: slideInDown 0.3s ease-out;
+}
+
+.notification-content {
+  padding: 24px;
+  text-align: center;
+}
+
+.notification-content h3 {
+  color: rgb(34, 123, 187);
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.notification-content p {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.notification-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.notification-buttons button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-buttons .btn-primary {
+  background: rgb(34, 123, 187);
+  color: white;
+}
+
+.notification-buttons .btn-primary:hover {
+  background: rgb(28, 100, 152);
+}
+
+.notification-buttons .btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.notification-buttons .btn-secondary:hover {
+  background: #5a6268;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.error-toast span {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.3;
+  margin-right: 8px;
+}
+
+.error-toast button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  margin-left: 8px;
+  flex-direction: row !important;
+}
+
+/* Removed hover effect for error toast button */
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/**
+ * Responsive Design
+ *
+ * Responsive design rules that adapt the layout and styling
+ * for different screen sizes and devices. Ensures optimal
+ * user experience across desktop, tablet, and mobile devices.
+ *
+ * Breakpoints:
+ * - Desktop: 1024px and above (default layout)
+ * - Tablet: 768px to 1023px (adjusted layout)
+ * - Mobile: 480px to 767px (mobile-optimized)
+ * - Small Mobile: Below 480px (compact layout)
+ *
+ * Adaptations:
+ * - Grid layout changes for smaller screens
+ * - Font size adjustments for readability
+ * - Spacing and padding modifications
+ * - Button and control sizing optimization
+ * - Touch-friendly interface elements
+ *
+ * Mobile Considerations:
+ * - Touch targets with minimum 44px size
+ * - Simplified navigation and controls
+ * - Optimized spacing for touch interaction
+ * - Reduced visual complexity for small screens
+ */
+/* Responsive Design */
+@media (max-width: 1024px) {
+  #softphone .content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  #softphone .dialpad-panel {
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  #softphone .main-content {
+    padding: 15px;
+  }
+
+  #softphone .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  #softphone .control-group {
+    min-width: auto;
+  }
+
+  #softphone .header h1 {
+    font-size: 20px;
+  }
+
+  #softphone .header-left {
+    gap: 8px;
+  }
+
+  .connected, .disconnected {
+    width: 16px;
+    height: 16px;
+  }
+
+  #softphone .dialpad {
+    max-width: 300px;
+    margin: 0 auto;
+  }
+
+  #softphone .speech-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #softphone .call-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  .error-toast {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    font-size: 12px;
+  }
+
+  .error-toast.show {
+    display: flex !important;
+  }
+
+  #softphone .header {
+    padding: 15px;
+  }
+
+  #softphone .header h1 {
+    font-size: 18px;
+  }
+
+  #softphone .header-left {
+    gap: 6px;
+  }
+
+  .connected, .disconnected {
+    width: 14px;
+    height: 14px;
+  }
+
+  #softphone .main-content {
+    padding: 10px;
+  }
+
+  #softphone .controls,
+  #softphone .transcript-panel,
+  #softphone .dialpad-panel {
+    padding: 15px;
+  }
+
+  #softphone .content {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
