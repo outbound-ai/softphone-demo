@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Softphone Demo</title>
+    <style>
+      /* Critical CSS to prevent FOUC */
+      body {
+        opacity: 0;
+        transition: opacity 0.1s ease-in;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #FFF;
+      }
+      body.loaded { opacity: 1; }
+      #softphone {
+        height: 100vh;
+        background: white;
+        display: flex;
+        flex-direction: column;
+      }
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        color: white;
+      }
+    </style>
+    <link rel="preload" href="/src/style.css" as="style">
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+
+<body>
+    <div id="authLoadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Authenticating...</p>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Connecting to call...</p>
+    </div>
+
+    <div id="errorToast" class="error-toast" style="display: none;">
+        <span id="errorMessage"></span>
+        <button onclick="hideError()">&times;</button>
+    </div>
+
+    <div id="softphone">
+        <div class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="disconnected" id="connectionIndicator"></div>
+                    <h1>Softphone Demo</h1>
+                </div>
+                <div class="header-right">
+                    <div class="welcome-text">
+                        <span id="welcomeText" style="display: none;">Welcome, </span>
+                        <span id="welcomeUsername"></span>
+                    </div>
+                    <button id="logoutBtn" style="display: none;">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="claimId">Claim ID or URL:</label>
+                    <div class="input-row">
+                        <input type="text" id="claimId" placeholder="Enter claim ID or paste URL">
+                        <button id="connectBtn" class="btn-primary">Connect</button>
+                        <button id="muteSpeakerBtn" class="btn-secondary" disabled>Mute Speaker</button>
+                        <button id="muteMicBtn" class="btn-secondary" disabled>Mute Mic</button>
+                        <button id="takeOverBtn" class="btn-success" disabled>Take Over</button>
+                        <button id="endCallBtn" class="btn-danger" disabled>End Call</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="transcript-panel">
+                    <h4>Transcript</h4>
+                    <div id="transcript"></div>
+                </div>
+
+                <div class="dialpad-panel">
+                    <h4>Dialpad</h4>
+                    <div class="dialpad">
+                        <div class="row">
+                            <div class="dtmf" data-code="1">
+                                <div class="bold">1</div>
+                                <div></div>
+                            </div>
+                            <div class="dtmf" data-code="2">
+                                <div class="bold">2</div>
+                                <div>ABC</div>
+                            </div>
+                            <div class="dtmf" data-code="3">
+                                <div class="bold">3</div>
+                                <div>DEF</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="dtmf" data-code="4">
+                                <div class="bold">4</div>
+                                <div>GHI</div>
+                            </div>
+                            <div class="dtmf" data-code="5">
+                                <div class="bold">5</div>
+                                <div>JKL</div>
+                            </div>
+                            <div class="dtmf" data-code="6">
+                                <div class="bold">6</div>
+                                <div>MNO</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="dtmf" data-code="7">
+                                <div class="bold">7</div>
+                                <div>PQRS</div>
+                            </div>
+                            <div class="dtmf" data-code="8">
+                                <div class="bold">8</div>
+                                <div>TUV</div>
+                            </div>
+                            <div class="dtmf" data-code="9">
+                                <div class="bold">9</div>
+                                <div>WXYZ</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="dtmf" data-code="*">
+                                <div class="bold">*</div>
+                                <div></div>
+                            </div>
+                            <div class="dtmf" data-code="0">
+                                <div class="bold">0</div>
+                                <div></div>
+                            </div>
+                            <div class="dtmf" data-code="#">
+                                <div class="bold">#</div>
+                                <div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="speech-form">
+                <input type="text" id="speechInput" placeholder="Type text to be spoken..." disabled>
+                <button type="submit" disabled>Speak</button>
+            </div>
+        </div>
+    </div>
+
+        <!-- Main application with ES6 imports -->
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
