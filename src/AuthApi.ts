@@ -2,11 +2,11 @@
 import Keycloak from 'keycloak-js'
 
 
-console.log('REACT_APP_KEYCLOAK_CLIENT_REALM', process.env.REACT_APP_KEYCLOAK_CLIENT_REALM)
+console.log('VITE_APP_KEYCLOAK_CLIENT_REALM', import.meta.env.VITE_APP_KEYCLOAK_CLIENT_REALM)
 
 const keycloakInstance = new (Keycloak as any)({
   url: 'https://auth.phoenix.ops.virtualoutbound.com/',
-  realm: process.env.REACT_APP_KEYCLOAK_CLIENT_REALM, // need to be reverted to prod no env 
+  realm: import.meta.env.VITE_APP_KEYCLOAK_CLIENT_REALM, // need to be reverted to prod no env 
   clientId: 'aquarius-ui',
 })
 

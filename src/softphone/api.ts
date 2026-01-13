@@ -3,7 +3,7 @@ import { authApi } from "../AuthApi";
 export const fetchPreferedTenant = async () => {
   const token = await authApi.getAuthToken();
   try {
-    const response = await fetch(`${process.env.REACT_APP_TENANT_ROLE_USER_URL}/api/v1/preferences/highest/outbound-ai-preferred-tenant`, {
+    const response = await fetch(`${import.meta.env.VITE_APP_TENANT_ROLE_USER_URL}/api/v1/preferences/highest/outbound-ai-preferred-tenant`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -11,7 +11,7 @@ import { authApi } from "../AuthApi";
 import { fetchPreferedTenant } from "./api";
 import "./softphone.css";
 
-const serviceUri = process.env.REACT_APP_SERVICE_URI ?? "ws://localhost:5001";
+const serviceUri = import.meta.env.VITE_APP_SERVICE_URI ?? "ws://localhost:5001";
 const callService = new CallService(serviceUri);
 
 callService.onLog = (message: string) => {
@@ -171,7 +171,7 @@ function App() {
     const token = await authApi.getAuthToken();
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_CLAIMS_URL}/api/v1/claims/${claimId}/calls`,
+        `${import.meta.env.VITE_APP_CLAIMS_URL}/api/v1/claims/${claimId}/calls`,
         {
           method: "POST",
           headers: {
@@ -212,7 +212,7 @@ function App() {
     const token = await authApi.getAuthToken();
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_CLAIMS_URL}/api/v1/calls/${jobId}`,
+        `${import.meta.env.VITE_APP_CLAIMS_URL}/api/v1/calls/${jobId}`,
         {
           method: "GET",
           headers: {
