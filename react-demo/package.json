@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@outbound-ai/softphone": "8.0.5",
+    "@outbound-ai/softphone": "8.0.6",
     "@types/keycloak-js": "^2.5.4",
     "@types/node": "^22.10.5",
     "@types/react": "^18.3.18",
