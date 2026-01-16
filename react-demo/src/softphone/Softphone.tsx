@@ -237,7 +237,38 @@ function App() {
     }
   }, []);
 
+
+  async function getClaimsDetails(claimId: string) {
+    const token = await authApi.getAuthToken();
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_APP_CLAIMS_URL}/api/v1/claims/${claimId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            currentUser: localStorage.getItem("currentUser") || "",
+            "outbound-ai-preferred-tenant": await fetchPreferedTenant(),
+            refresh_token: localStorage.getItem("refreshToken") || "",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch claim details");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching claim details:", error);
+      throw error;
+    }
+  }
+
   /**
+   * 
    * Handles the click event for connecting or disconnecting the softphone.
    * If there is no active conversation, it starts a new payer representative call
    * using the claim ID from the input field. If a conversation exists, it disconnects it.
@@ -257,7 +288,9 @@ function App() {
       _setTranscript([]);
       const input = document.getElementById("claimid") as HTMLInputElement;
       const claimId = input.value.split("/").pop() as string;
-      const callJob = await startPayerRepCall(claimId);
+      const claimDetails = await getClaimsDetails(claimId);
+      const oaiClaimId = claimDetails.oaiClaimId;
+      const callJob = await startPayerRepCall(oaiClaimId);
       const jobId = callJob.jobId;
       const authTokn = await authApi.getAuthToken();
       if (!jobStatus) {
