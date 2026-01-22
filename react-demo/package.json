@@ -2,28 +2,34 @@
   "name": "@outbound-ai/softphone-demo",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "dependencies": {
-    "@outbound-ai/softphone": "2.0.0",
-    "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/react": "^13.1.0",
-    "@testing-library/user-event": "^13.5.0",
-    "@types/jest": "^27.4.1",
-    "@types/node": "^16.11.27",
-    "@types/react": "^18.0.5",
-    "@types/react-dom": "^18.0.1",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "react-scripts": "5.0.1",
-    "typescript": "^4.6.3",
-    "cross-env": "^7.0.3",
-    "web-vitals": "^2.1.4"
+    "@outbound-ai/softphone": "8.0.6",
+    "@types/keycloak-js": "^2.5.4",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "axios": "^1.7.9",
+    "keycloak-js": "^26.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.5.0",
+    "typescript": "^5.7.3",
+    "web-vitals": "^4.2.4"
   },
   "scripts": {
-    "start-local": "cross-env REACT_APP_ENV=local REACT_APP_SERVICE_URI=ws://localhost:5001 react-scripts start",
-    "start-dev": "cross-env PORT=3030 REACT_APP_ENV=dev REACT_APP_SERVICE_URI=wss://calls.phoenix.newdev.virtualoutbound.com react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "vite",
+    "start-local": "vite --mode local --port 3000",
+    "start-dev": "vite --mode dev --port 3030",
+    "start-pre-stg": "vite --mode pre-staging --port 3030",
+    "start": "vite --mode prod --port 3030",
+    "build": "tsc && vite build",
+    "build-local": "tsc && vite build --mode local",
+    "build-dev": "tsc && vite build --mode dev",
+    "build-pre-stg": "tsc && vite build --mode pre-staging",
+    "build-prod": "tsc && vite build --mode prod",
+    "preview": "vite preview",
+    "test": "vitest"
   },
   "eslintConfig": {
     "extends": [
@@ -31,19 +37,9 @@
       "react-app/jest"
     ]
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
   "devDependencies": {
-    "cross-env": "^7.0.3"
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.1.7",
+    "vitest": "^4.0.17"
   }
 }
