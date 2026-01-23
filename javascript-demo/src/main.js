@@ -770,7 +770,7 @@ function handleTakeOver() {
  * 4. Claim ID Processing:
  *    - Gets claim ID from input field
  *    - Extracts claim ID from URL or direct input
- *    - Validates claim ID format
+ *    - Resolves numeric claim IDs to UUIDs when needed
  *
  * 5. Call Initiation:
  *    - Calls startCall() to create call via API
@@ -795,6 +795,31 @@ function handleTakeOver() {
  * Usage Example:
  * await handleConnect();
  */
+function getClaimsBaseUrlFromInput(input) {
+  if (!input) {
+    return '';
+  }
+
+  try {
+    const url = new URL(input);
+    const hostname = url.hostname || '';
+    const mappedHostname = hostname.includes('console') && !hostname.includes('claims')
+      ? hostname.replace('console', 'claims')
+      : hostname;
+    const port = url.port ? `:${url.port}` : '';
+    return `${url.protocol}//${mappedHostname}${port}`;
+  } catch (error) {
+    return '';
+  }
+}
+
+function getClaimsBaseUrl(inputBaseUrl, envBaseUrl) {
+  if (inputBaseUrl) {
+    return inputBaseUrl;
+  }
+  return envBaseUrl || '';
+}
+
 async function handleConnect() {
   try {
     console.log('Starting connection process...');
@@ -846,18 +871,26 @@ async function handleConnect() {
     console.log('Starting call for claim:', '[ID]');
 
     // Start call using the package
-    const callData = await startCall(claimId, token);
+    const claimsBaseUrl = getClaimsBaseUrl(
+      getClaimsBaseUrlFromInput(claimIdValue),
+      (process.env.APP_CLAIMS_URL || '').replace(/^\"|\"$/g, '')
+    );
+    if (!claimsBaseUrl) {
+      throw new Error('Claims URL is not configured');
+    }
+    const resolvedClaimId = await resolveClaimId(claimId, token, claimsBaseUrl);
+    const callData = await startCall(resolvedClaimId, token, claimsBaseUrl);
     console.log('Call started successfully:', '[CALL_DATA]');
 
     // Wait for job to be ready (status 2 indicates ready for WebSocket connection)
-    let jobStatus = await checkJobStatus(callData.jobId, token);
+    let jobStatus = await checkJobStatus(callData.jobId, token, claimsBaseUrl);
     let retryCount = 0;
     const maxRetries = 30; // Wait up to 30 seconds
 
     while (jobStatus.status !== 2 && retryCount < maxRetries) {
       console.log(`Job status: ${jobStatus.status}, waiting for status 2...`);
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-      jobStatus = await checkJobStatus(callData.jobId, token);
+      jobStatus = await checkJobStatus(callData.jobId, token, claimsBaseUrl);
       retryCount++;
     }
 
@@ -1086,7 +1119,7 @@ function handleDisconnect() {
  * Usage Example:
  * const callData = await startCall('claim-id-123', 'auth-token');
  */
-async function startCall(claimId, token) {
+async function startCall(claimId, token, claimsBaseUrl) {
   try {
     console.log('Starting call for claim:', '[ID]');
 
@@ -1098,7 +1131,7 @@ async function startCall(claimId, token) {
       'refresh_token': localStorage.getItem('refreshToken') || '',
     };
 
-    const claimsUrl = (process.env.APP_CLAIMS_URL || '').replace(/^\"|\"$/g, ''); // Remove quotes from environment variable
+    const claimsUrl = claimsBaseUrl;
     const fullUrl = `${claimsUrl}/api/v1/claims/${claimId}/calls`;
     const response = await fetch(fullUrl, {
       method: 'POST',
@@ -1145,6 +1178,61 @@ async function startCall(claimId, token) {
     console.error('Error starting call:', error);
     throw error;
   }
+}
+
+/**
+ * Resolves numeric claim IDs to UUIDs when required by the claims API.
+ *
+ * If the input is already a UUID, it is returned as-is. If it's numeric,
+ * this function fetches the claim and returns its oaiClaimId field.
+ *
+ * @param {string} claimId - Claim ID input (UUID or numeric)
+ * @param {string} token - Authentication token for API requests
+ * @returns {Promise<string>} Resolved UUID claim ID
+ */
+async function resolveClaimId(claimId, token, claimsBaseUrl) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(claimId)) {
+    return claimId;
+  }
+
+  const numericRegex = /^[0-9]+$/;
+  if (!numericRegex.test(claimId)) {
+    throw new Error('Please enter a valid claim ID or URL in the input field');
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    'currentUser': localStorage.getItem('currentUser') || '',
+    'refresh_token': localStorage.getItem('refreshToken') || '',
+  };
+
+  const claimsUrl = claimsBaseUrl;
+  const fullUrl = `${claimsUrl}/api/v1/claims/${claimId}`;
+  const response = await fetch(fullUrl, { method: 'GET', headers });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Claim lookup error response:', errorText);
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch (e) {
+      errorData = { detail: errorText };
+    }
+    if (window.showError) {
+      window.showError(errorData);
+    }
+    throw new Error(errorData.detail || `Failed to resolve claim ID: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  if (!data || !data.oaiClaimId) {
+    throw new Error('Claim lookup did not return a valid oaiClaimId');
+  }
+
+  return data.oaiClaimId;
 }
 
 /**
@@ -1197,7 +1285,7 @@ async function startCall(claimId, token) {
  * Usage Example:
  * const status = await checkJobStatus('job-id-123', 'auth-token');
  */
-async function checkJobStatus(jobId, token) {
+async function checkJobStatus(jobId, token, claimsBaseUrl) {
   try {
     console.log('Checking job status for:', '[ID]');
 
@@ -1209,7 +1297,7 @@ async function checkJobStatus(jobId, token) {
       'refresh_token': localStorage.getItem('refreshToken') || '',
     };
 
-    const claimsUrl = (process.env.APP_CLAIMS_URL || '').replace(/^\"|\"$/g, ''); // Remove quotes from environment variable
+    const claimsUrl = claimsBaseUrl;
     const fullUrl = `${claimsUrl}/api/v1/calls/${jobId}`;
     const response = await fetch(fullUrl, {
       method: 'GET',

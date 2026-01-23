@@ -222,7 +222,9 @@ function generateDTMFTone(code) {
  *
  * Supported Input Formats:
  * - Direct UUID: "8dc125d6-1da5-4f28-b06c-60c8d322ad8f"
+ * - Direct numeric ID: "12"
  * - URL with claim: "https://example.com/claim/8dc125d6-1da5-4f28-b06c-60c8d322ad8f"
+ * - URL with claim: "https://console.virtualoutbound.com/claims/claim/12"
  * - Text with UUID: "Claim ID: 8dc125d6-1da5-4f28-b06c-60c8d322ad8f"
  *
  * UUID Pattern:
@@ -231,7 +233,7 @@ function generateDTMFTone(code) {
  * - Example: 8dc125d6-1da5-4f28-b06c-60c8d322ad8f
  *
  * URL Pattern:
- * - Looks for "/claim/" followed by UUID
+ * - Looks for "/claim/" or "/claims/claim/" followed by UUID or numeric ID
  * - Handles various URL structures
  *
  * Error Handling:
@@ -250,20 +252,30 @@ function extractClaimIdFromUrl(input) {
     return input;
   }
 
+  // If it's already a numeric ID, return it
+  const numericRegex = /^[0-9]+$/;
+  if (numericRegex.test(input)) {
+    return input;
+  }
+
   // If it's a URL, try to extract claim ID
-  if (input && input.includes('/claim/')) {
-    // Look for /claim/ followed by a UUID
-    const claimIdMatch = input.match(/\/claim\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  if (input && (input.includes('/claim/') || input.includes('/claims/claim/'))) {
+    // Look for /claim/ or /claims/claim/ followed by UUID or numeric ID
+    const claimIdMatch = input.match(/\/(?:claims\/)?claim\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9]+)/i);
     if (claimIdMatch) {
       return claimIdMatch[1];
     }
   }
 
-  // If it's not a URL but contains a UUID, extract it
+  // If it's not a URL but contains a UUID or numeric ID, extract it
   if (input) {
     const uuidInText = input.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
     if (uuidInText) {
       return uuidInText[0];
+    }
+    const numericInText = input.match(/\b[0-9]+\b/);
+    if (numericInText) {
+      return numericInText[0];
     }
   }
 
