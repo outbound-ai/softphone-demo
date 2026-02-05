@@ -202,7 +202,7 @@ function App() {
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
           body: JSON.stringify({
-            type: "HumanAgent",
+            type: _callType,
             useCase: "CSI",
           }),
         }
