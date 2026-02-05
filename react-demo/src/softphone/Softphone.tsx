@@ -96,6 +96,20 @@ function App() {
   const [jobStatus, setJobStatus] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  enum CallTypeEnum {
+    humanAgent = 'HumanAgent',
+    standard = 'Standard'
+  }
+
+
+  const [_callType, setCallType] = useState<CallTypeEnum>(CallTypeEnum.humanAgent);
+
+  const handelCallType = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCallType = event.target.value as CallTypeEnum;
+    setCallType(selectedCallType);
+  };
+
+
   useEffect(() => {
     if (_conversation) {
       _conversation.onConnectionStateChanged = (connected) => {
@@ -103,6 +117,12 @@ function App() {
         _setTranscript([]);
         if (!connected) {
           _setHasTakenOver(false);
+        }
+        if (_callType === CallTypeEnum.standard) {
+          _conversation.agentTakeOver();
+          _setTakeOverType(TakeOverTypeEnum.browser);
+          _setHasTakenOver(true);
+          _conversation.unmuteInput();
         }
       };
 
@@ -471,6 +491,12 @@ function App() {
       </div>
       {/* Connection Controls */}
       <div className="controls">
+         <>
+          <select id="calltype" onChange={handelCallType}>
+            <option value={CallTypeEnum.humanAgent}>Payer Rep</option>
+            <option value={CallTypeEnum.standard}>Manual Call</option>
+          </select>
+        </>
         <>
           <label>ClaimId</label>
           <input id="claimid" />
