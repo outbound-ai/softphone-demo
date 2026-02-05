@@ -51,7 +51,7 @@ if (typeof window !== 'undefined') {
  *
  * Usage: Automatically executed when file loads
  */
-(function() {
+(function () {
   // Store the original AudioContext constructor
   const OriginalAudioContext = window.AudioContext || window.webkitAudioContext;
 
@@ -62,7 +62,7 @@ if (typeof window !== 'undefined') {
 
       // Override the addModule method to handle softphone worklet loading
       const originalAddModule = audioContext.audioWorklet.addModule;
-      audioContext.audioWorklet.addModule = async function(moduleURL, options) {
+      audioContext.audioWorklet.addModule = async function (moduleURL, options) {
         // Check if this is the softphone worklet
         if (moduleURL.includes('softphoneAudioWorklet') || moduleURL.includes('SoftPhoneAudioWorklet')) {
           console.log('Intercepted softphone worklet loading request:', moduleURL);
@@ -224,7 +224,7 @@ async function preloadAudioWorklet() {
  * Usage Example:
  * await window.loadAudioWorklet(audioContext, 5);
  */
-window.loadAudioWorklet = async function(audioContext, retries = 3) {
+window.loadAudioWorklet = async function (audioContext, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Attempting to load audio worklet (attempt ${attempt}/${retries})...`);
@@ -430,11 +430,20 @@ async function initializeApp() {
  * Usage Example:
  * setupConversationHandlers(conversation);
  */
-function setupConversationHandlers(conversation) {
+function setupConversationHandlers(conversation, callType = 'HumanAgent') {
   if (conversation) {
     conversation.onConnectionStateChanged = (connected) => {
       console.log('Connection state changed:', connected);
       window.isConnected = connected;
+      if (callType && callType.toLowerCase() === 'standard' && connected) {
+
+        // Delay slightly to ensure connection is fully established
+        setTimeout(() => {
+          console.log('Executing handleTakeOver for Standard call');
+          handleTakeOver();
+        }, 500);
+      }
+
       if (window.updateCallStatus) {
         window.updateCallStatus(connected);
       }
@@ -442,14 +451,14 @@ function setupConversationHandlers(conversation) {
         window.updateAudioStatus();
       }
 
-          // Clear UI and reload page when connection is lost (call ends)
-    if (!connected) {
-      clearUIAfterCall();
-      // Reload page after a short delay to ensure fresh state for next call
-      setTimeout(() => {
-        reloadPageAfterCall();
-      }, 1000); // 1 second delay to allow UI to update
-    }
+      // Clear UI and reload page when connection is lost (call ends)
+      if (!connected) {
+        clearUIAfterCall();
+        // Reload page after a short delay to ensure fresh state for next call
+        setTimeout(() => {
+          reloadPageAfterCall();
+        }, 1000); // 1 second delay to allow UI to update
+      }
     };
 
     conversation.onTranscriptAvailable = (participantId, participantType, text) => {
@@ -858,6 +867,10 @@ async function handleConnect() {
       throw new Error('No access token available');
     }
 
+    // Get call type from selector
+    const callTypeSelector = document.getElementById('callType');
+    const callType = callTypeSelector ? callTypeSelector.value : 'HumanAgent';
+
     // Get claim ID from input field
     const claimIdInput = document.getElementById('claimId');
     const claimIdValue = claimIdInput ? claimIdInput.value.trim() : '';
@@ -879,7 +892,7 @@ async function handleConnect() {
       throw new Error('Claims URL is not configured');
     }
     const resolvedClaimId = await resolveClaimId(claimId, token, claimsBaseUrl);
-    const callData = await startCall(resolvedClaimId, token, claimsBaseUrl);
+    const callData = await startCall(resolvedClaimId, token, claimsBaseUrl, callType);
     console.log('Call started successfully:', '[CALL_DATA]');
 
     // Wait for job to be ready (status 2 indicates ready for WebSocket connection)
@@ -903,7 +916,7 @@ async function handleConnect() {
     // Get conversation using the package
     conversation = await callService.getConversationAsync(callData.jobId, token);
     window.conversation = conversation; // Make conversation available globally
-    setupConversationHandlers(conversation);
+    setupConversationHandlers(conversation, callType);
 
     // Hide loading overlay
     if (loadingOverlay) {
@@ -1119,7 +1132,7 @@ function handleDisconnect() {
  * Usage Example:
  * const callData = await startCall('claim-id-123', 'auth-token');
  */
-async function startCall(claimId, token, claimsBaseUrl) {
+async function startCall(claimId, token, claimsBaseUrl, callType = 'HumanAgent') {
   try {
     console.log('Starting call for claim:', '[ID]');
 
@@ -1137,7 +1150,7 @@ async function startCall(claimId, token, claimsBaseUrl) {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
-        type: 'HumanAgent',
+        type: callType,
         useCase: 'CSI',
       }),
     });
