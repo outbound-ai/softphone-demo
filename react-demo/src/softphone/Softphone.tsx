@@ -198,7 +198,7 @@ function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
             currentUser: localStorage.getItem("currentUser") || "",
-            "outbound-ai-preferred-tenant": await fetchPreferedTenant(),
+            "outbound-ai-preferred-tenant": import.meta.env.VITE_APP_PREFERRED_TENANT,
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
           body: JSON.stringify({
@@ -239,7 +239,7 @@ function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
             currentUser: localStorage.getItem("currentUser") || "",
-            "outbound-ai-preferred-tenant": await fetchPreferedTenant(),
+            "outbound-ai-preferred-tenant": import.meta.env.VITE_APP_PREFERRED_TENANT,
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
         }
@@ -269,7 +269,7 @@ function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
             currentUser: localStorage.getItem("currentUser") || "",
-            "outbound-ai-preferred-tenant": await fetchPreferedTenant(),
+            "outbound-ai-preferred-tenant": import.meta.env.VITE_APP_PREFERRED_TENANT,
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
         }

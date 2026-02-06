@@ -1142,6 +1142,7 @@ async function startCall(claimId, token, claimsBaseUrl, callType = 'HumanAgent')
       'Authorization': `Bearer ${token}`,
       'currentUser': localStorage.getItem('currentUser') || '',
       'refresh_token': localStorage.getItem('refreshToken') || '',
+      'outbound-ai-preferred-tenant': (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '')
     };
 
     const claimsUrl = claimsBaseUrl;
@@ -1219,6 +1220,7 @@ async function resolveClaimId(claimId, token, claimsBaseUrl) {
     'Authorization': `Bearer ${token}`,
     'currentUser': localStorage.getItem('currentUser') || '',
     'refresh_token': localStorage.getItem('refreshToken') || '',
+    'outbound-ai-preferred-tenant': (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '')
   };
 
   const claimsUrl = claimsBaseUrl;
@@ -1308,6 +1310,7 @@ async function checkJobStatus(jobId, token, claimsBaseUrl) {
       'Authorization': `Bearer ${token}`,
       'currentUser': localStorage.getItem('currentUser') || '',
       'refresh_token': localStorage.getItem('refreshToken') || '',
+      'outbound-ai-preferred-tenant': (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '')
     };
 
     const claimsUrl = claimsBaseUrl;

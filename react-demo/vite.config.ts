@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
       TENANT_ROLE_USER_URL: '',
       CLAIMS_URL: '',
       KEYCLOAK_CLIENT_REALM: 'dev',
+      APP_PREFERRED_TENANT: 'your-preferred-tenant-id',
       ENV: 'local',
     },
     dev: {
@@ -19,20 +20,23 @@ export default defineConfig(({ mode }) => {
       TENANT_ROLE_USER_URL: 'https://nayans-tenantroleuser.phoenix.dev.virtualoutbound.com',
       CLAIMS_URL: 'https://nayans-claims.phoenix.dev.virtualoutbound.com',
       KEYCLOAK_CLIENT_REALM: 'dev',
+      APP_PREFERRED_TENANT: 'your-preferred-tenant-id',
       ENV: 'dev',
     },
     'pre-staging': {
-      SERVICE_URI: 'wss://pre-staging-calls.phoenix.stg.outbound.ai',
-      TENANT_ROLE_USER_URL: 'https://pre-staging-tenantroleuser.phoenix.stg.outbound.ai',
-      CLAIMS_URL: 'https://pre-staging-claims.phoenix.stg.outbound.ai',
+      SERVICE_URI: 'wss://integration-calls.phoenix.stg.outbound.ai',
+      TENANT_ROLE_USER_URL: 'https://integration-tenantroleuser.phoenix.stg.outbound.ai',
+      CLAIMS_URL: 'https://integration-claims.phoenix.stg.outbound.ai',
       KEYCLOAK_CLIENT_REALM: 'stg',
-      ENV: 'pre-staging',
+      APP_PREFERRED_TENANT: 'your-preferred-tenant-id',
+      ENV: 'integration',
     },
     prod: {
       SERVICE_URI: 'wss://calls.phoenix.outbound.ai',
       TENANT_ROLE_USER_URL: 'https://tenantroleuser.phoenix.outbound.ai',
       CLAIMS_URL: 'https://claims.phoenix.outbound.ai',
       KEYCLOAK_CLIENT_REALM: 'prod',
+      APP_PREFERRED_TENANT: 'your-preferred-tenant-id',
       ENV: 'prod',
     },
   };
@@ -51,6 +55,7 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_APP_CLAIMS_URL': JSON.stringify(currentEnvConfig.CLAIMS_URL),
       'import.meta.env.VITE_APP_KEYCLOAK_CLIENT_REALM': JSON.stringify(currentEnvConfig.KEYCLOAK_CLIENT_REALM),
       'import.meta.env.VITE_APP_ENV': JSON.stringify(currentEnvConfig.ENV),
+      'import.meta.env.VITE_APP_PREFERRED_TENANT': JSON.stringify(currentEnvConfig.APP_PREFERRED_TENANT),
     },
     server: {
       port: mode === 'local' ? 3000 : 3030,
