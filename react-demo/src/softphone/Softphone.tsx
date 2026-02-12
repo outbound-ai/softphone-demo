@@ -95,6 +95,7 @@ function App() {
   const [_payerAgentReady, _setPayerAgentReady] = useState(false);
   const [jobStatus, setJobStatus] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [notification, setNotification] = useState<{type: 'success' | 'error' | 'info', message: string} | null>(null);
 
   enum CallTypeEnum {
     humanAgent = 'HumanAgent',
@@ -178,6 +179,17 @@ function App() {
     }
   }, [_payerAgentReady, handleTakeOver]);
 
+  // Auto-dismiss notification after 5 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   /**
    * Starts a new payer representative call for the given claim ID.
    * Sends a POST request to the claims API to initiate the call.
@@ -209,13 +221,25 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch claim details");
+        let errorMessage = `Failed to start call: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          // Try to extract error message from various possible fields
+          errorMessage = errorData.message || errorData.error || errorData.detail || 
+                        (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+                        errorMessage;
+        } catch (e) {
+          // If JSON parsing fails, use default error message
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error fetching claim details:", error);
+      console.error("Error starting call:", error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      setNotification({type: 'error', message: errorMsg});
       throw error;
     }
   };
@@ -246,13 +270,24 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to check job progress");
+        let errorMessage = `Failed to check job progress: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorData.detail || 
+                        (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+                        errorMessage;
+        } catch (e) {
+          // If JSON parsing fails, use default error message
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
       console.error("Error checking job progress:", error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      setNotification({type: 'error', message: errorMsg});
       throw error;
     }
   }, []);
@@ -276,13 +311,24 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch claim details");
+        let errorMessage = `Failed to fetch claim details: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorData.detail || 
+                        (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+                        errorMessage;
+        } catch (e) {
+          // If JSON parsing fails, use default error message
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
       console.error("Error fetching claim details:", error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      setNotification({type: 'error', message: errorMsg});
       throw error;
     }
   }
@@ -299,6 +345,7 @@ function App() {
   async function handleClickConnectAsync(event: MouseEvent) {
     setJobStatus(false);
     setIsLoading(true);
+    setNotification(null);
     event.stopPropagation();
 
     if (_conversation == null) {
@@ -306,31 +353,78 @@ function App() {
       _setHasTakenOver(false);
       _setMuted(true);
       _setTranscript([]);
-      const input = document.getElementById("claimid") as HTMLInputElement;
-      const claimId = input.value.split("/").pop() as string;
-      const claimDetails = await getClaimsDetails(claimId);
-      const oaiClaimId = claimDetails.oaiClaimId;
-      const callJob = await startPayerRepCall(oaiClaimId);
-      const jobId = callJob.jobId;
-      const authTokn = await authApi.getAuthToken();
-      if (!jobStatus) {
+      
+      try {
+        const input = document.getElementById("claimid") as HTMLInputElement;
+        const claimId = input.value.split("/").pop() as string;
+        
+        if (!claimId) {
+          throw new Error("Please enter a valid claim ID");
+        }
+        
+        const claimDetails = await getClaimsDetails(claimId);
+        const oaiClaimId = claimDetails.oaiClaimId;
+        const callJob = await startPayerRepCall(oaiClaimId);
+        const jobId = callJob.jobId;
+        const authTokn = await authApi.getAuthToken();
+        
+        let pollCount = 0;
+        const maxPolls = 60; // 60 seconds timeout
+        
         const interval = setInterval(async () => {
-          const jobStatus = await checkforJobProgress(jobId);
-          if (jobStatus.status === 2) {
-            setJobStatus(true);
+          try {
+            pollCount++;
+            
+            if (pollCount > maxPolls) {
+              clearInterval(interval);
+              setIsLoading(false);
+              setNotification({type: 'error', message: 'Call setup timed out. Please try again.'});
+              return;
+            }
+            
+            const jobStatus = await checkforJobProgress(jobId);
+            
+            if (jobStatus.status === 2) {
+              setJobStatus(true);
+              clearInterval(interval);
+              
+              try {
+                const conversation = await callService.getConversationAsync(
+                  jobId,
+                  authTokn
+                );
+                _setConversation(conversation);
+                _setConnected(true);
+                setIsLoading(false);
+                setNotification({type: 'success', message: 'Call connected successfully'});
+              } catch (error) {
+                setIsLoading(false);
+                const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+                setNotification({type: 'error', message: `Failed to connect call: ${errorMsg}`});
+              }
+            } else if (jobStatus.status === 3 || jobStatus.status === 4) {
+              // Status 3 or 4 typically indicate failure or cancellation
+              clearInterval(interval);
+              setIsLoading(false);
+              const errorMsg = jobStatus.message || jobStatus.error || jobStatus.statusMessage || 'Call setup failed';
+              setNotification({type: 'error', message: `Call failed: ${errorMsg}`});
+            } else {
+              console.log("Job status:", jobStatus.status);
+            }
+          } catch (error) {
             clearInterval(interval);
-            const conversation = await callService.getConversationAsync(
-              jobId,
-              authTokn
-            );
-            _setConversation(conversation);
-            _setConnected(true);
             setIsLoading(false);
-          } else {
-            console.error("Job is not in progress", jobStatus);
+            console.error("Error during job polling:", error);
+            // Display the error only if it's not already displayed (to avoid duplicate notifications)
+            if (error instanceof Error && error.message) {
+              // Error notification already set by API call
+            }
           }
         }, 1000);
-        return;
+      } catch (error) {
+        setIsLoading(false);
+        console.error("Error starting call:", error);
+        // Error notification already set by the API calls
       }
     } else {
       _conversation.disconnect();
@@ -472,6 +566,12 @@ function App() {
 
   return (
     <div id="softphone">
+      {notification && (
+        <div className={`notification notification-${notification.type}`}>
+          <span>{notification.message}</span>
+          <button className="notification-close" onClick={() => setNotification(null)}>×</button>
+        </div>
+      )}
       {isLoading && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
