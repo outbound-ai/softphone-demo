@@ -77,10 +77,19 @@
         <div class="main-content">
             <div class="controls">
                 <div class="control-group">
+                    <label for="callType">Call Type:</label>
+                    <select id="callType"
+                        style="margin-bottom: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        <option value="HumanAgent">Payer Rep</option>
+                        <option value="Standard">Manual Call</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
                     <label for="claimId">Claim ID or URL:</label>
                     <div class="input-row">
-                        <input type="text" id="claimId" placeholder="Enter claim ID or paste URL">
-                        <button id="connectBtn" class="btn-primary">Connect</button>
+                        <input type="text" id="claimId" placeholder="https://...claim/14029 or 14029">
+                        <button id="connectBtn" class="btn-primary">Start Call</button>
                         <button id="muteSpeakerBtn" class="btn-secondary" disabled>Mute Speaker</button>
                         <button id="muteMicBtn" class="btn-secondary" disabled>Mute Mic</button>
                         <button id="takeOverBtn" class="btn-success" disabled>Take Over</button>

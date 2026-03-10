@@ -862,13 +862,38 @@ async function handleConnect() {
     const claimIdInput = document.getElementById('claimId');
     const claimIdValue = claimIdInput ? claimIdInput.value.trim() : '';
 
-    // Extract claim ID from input (could be a URL or just the ID)
-    const claimId = window.extractClaimIdFromUrl(claimIdValue);
-    if (!claimId) {
-      throw new Error('Please enter a valid claim ID or URL in the input field');
+    // Parse input to extract tenant ID and claim ID
+    let tenantId = (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, ''); // Default tenant
+    let claimId;
+    
+    console.log('Raw APP_PREFERRED_TENANT:', process.env.APP_PREFERRED_TENANT);
+    console.log('Cleaned tenant ID:', tenantId);
+    console.log('Input value:', claimIdValue);
+    
+    // Check if input has new URL pattern: .../tenantId/claims/claim/claimId
+    // Only match when tenant ID appears after domain and before /claims/claim/
+    const newUrlPattern = /\/([^\/\s]+)\/claims\/claim\/([^\/\s]+)$/i;
+    const newMatch = claimIdValue.match(newUrlPattern);
+    
+    // Additional check: ensure the matched part is not a domain name
+    const isDomainUrl = /^https?:\/\/[^\/]+\/claims\/claim\//.test(claimIdValue);
+    
+    if (newMatch && !isDomainUrl) {
+      // New URL format - extract tenant ID from URL path
+      tenantId = newMatch[1];
+      claimId = newMatch[2];
+      console.log('Using new URL format - tenant from URL:', tenantId, 'claim:', claimId);
+    } else {
+      // Old URL format or direct ID - use env tenant ID
+      claimId = window.extractClaimIdFromUrl(claimIdValue);
+      console.log('Using old URL format - tenant from env:', tenantId, 'claim:', claimId);
     }
-
-    console.log('Starting call for claim:', '[ID]');
+    
+    if (!claimId) {
+      throw new Error('Please enter a valid claim ID or URL');
+    }
+    
+    console.log(`Using tenant ID: ${tenantId}, claim ID: ${claimId}`);
 
     // Start call using the package
     const claimsBaseUrl = getClaimsBaseUrl(
@@ -878,17 +903,28 @@ async function handleConnect() {
     if (!claimsBaseUrl) {
       throw new Error('Claims URL is not configured');
     }
-    const resolvedClaimId = await resolveClaimId(claimId, token, claimsBaseUrl);
-    const callData = await startCall(resolvedClaimId, token, claimsBaseUrl);
+    
+    const callData = await startCall(claimId, token, claimsBaseUrl, callType, tenantId);
     console.log('Call started successfully:', '[CALL_DATA]');
 
     // Wait for job to be ready (status 2 indicates ready for WebSocket connection)
     let jobStatus = await checkJobStatus(callData.jobId, token, claimsBaseUrl);
     let retryCount = 0;
-    const maxRetries = 30; // Wait up to 30 seconds
+    const maxRetries = 60; // Wait up to 60 seconds
 
     while (jobStatus.status !== 2 && retryCount < maxRetries) {
       console.log(`Job status: ${jobStatus.status}, waiting for status 2...`);
+      
+      // Check for failure statuses
+      if (jobStatus.status === 3 || jobStatus.status === 4) {
+        // Status 3 or 4 typically indicate failure or cancellation
+        const errorMsg = jobStatus.message || jobStatus.error || jobStatus.statusMessage || 'Call setup failed';
+        if (window.showNotification) {
+          window.showNotification('error', `Call failed: ${errorMsg}`);
+        }
+        throw new Error(`Call failed: ${errorMsg}`);
+      }
+      
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
       jobStatus = await checkJobStatus(callData.jobId, token, claimsBaseUrl);
       retryCount++;
@@ -909,6 +945,11 @@ async function handleConnect() {
     if (loadingOverlay) {
       loadingOverlay.style.display = 'none';
     }
+    
+    // Show success notification
+    if (window.showNotification) {
+      window.showNotification('success', 'Call connected successfully');
+    }
 
     console.log('Connection process completed successfully');
   } catch (error) {
@@ -920,8 +961,10 @@ async function handleConnect() {
       loadingOverlay.style.display = 'none';
     }
 
-    // Show error
-    if (window.showError) {
+    // Show error notification
+    if (window.showNotification) {
+      window.showNotification('error', error.message);
+    } else if (window.showError) {
       window.showError(error.message);
     }
   }
@@ -1119,20 +1162,47 @@ function handleDisconnect() {
  * Usage Example:
  * const callData = await startCall('claim-id-123', 'auth-token');
  */
-async function startCall(claimId, token, claimsBaseUrl) {
+async function startCall(claimId, token, claimsBaseUrl, callType = 'HumanAgent', tenantId = null) {
   try {
     console.log('Starting call for claim:', '[ID]');
 
-    // Build headers
+    // Build headers with tenant support
+    const preferredTenant = tenantId || (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '');
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
       'currentUser': localStorage.getItem('currentUser') || '',
       'refresh_token': localStorage.getItem('refreshToken') || '',
+      'outbound-ai-preferred-tenant': preferredTenant
     };
 
+    // Check if claimId is numeric and resolve to UUID if needed
+    let resolvedClaimId = claimId;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const numericRegex = /^[0-9]+$/;
+    
+    if (!uuidRegex.test(claimId) && numericRegex.test(claimId)) {
+      // Numeric ID, need to resolve to UUID via GET request
+      try {
+        const getResponse = await fetch(`${claimsBaseUrl}/api/v1/claims/${claimId}`, {
+          method: 'GET',
+          headers: headers
+        });
+        
+        if (getResponse.ok) {
+          const claimData = await getResponse.json();
+          resolvedClaimId = claimData.oaiClaimId || claimId;
+          console.log('Resolved numeric claim ID to UUID:', resolvedClaimId);
+        } else {
+          console.warn('Could not resolve claim ID, using as-is');
+        }
+      } catch (resolveError) {
+        console.warn('Error resolving claim ID:', resolveError.message);
+      }
+    }
+
     const claimsUrl = claimsBaseUrl;
-    const fullUrl = `${claimsUrl}/api/v1/claims/${claimId}/calls`;
+    const fullUrl = `${claimsUrl}/api/v1/claims/${resolvedClaimId}/calls`;
     const response = await fetch(fullUrl, {
       method: 'POST',
       headers: headers,
@@ -1156,26 +1226,35 @@ async function startCall(claimId, token, claimsBaseUrl) {
         errorData = { detail: errorText };
       }
 
-      // Show error in UI
-      if (window.showError) {
+      // Enhanced error message extraction
+      let errorMessage = errorData.message || errorData.error || errorData.detail || 
+                        (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+                        `Failed to start call: ${response.status} ${response.statusText}`;
+
+      // Show error notification
+      if (window.showNotification) {
+        window.showNotification('error', errorMessage);
+      } else if (window.showError) {
         window.showError(errorData);
       }
 
-      // Throw error with the actual detail from the API
-      throw new Error(errorData.detail || `Failed to start call: ${response.status} ${response.statusText}`);
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
     console.log('Call started successfully:', '[CALL_DATA]');
 
-    // Clear any existing errors on success
-    if (window.hideError) {
+    // Show success notification
+    if (window.showNotification) {
+      window.showNotification('success', 'Call initiated successfully');
+    } else if (window.hideError) {
       window.hideError();
     }
 
     return data;
   } catch (error) {
     console.error('Error starting call:', error);
+    // Error notification handled above
     throw error;
   }
 }
@@ -1238,104 +1317,43 @@ async function resolveClaimId(claimId, token, claimsBaseUrl) {
 /**
  * Checks the status of a call job.
  *
- * This function polls the API to check the current status of a call job,
- * which is used to determine when the job is ready for WebSocket connection.
- *
  * @param {string} jobId - The job ID to check status for
- * @param {string} token - Authentication token for API requests
- * @returns {Promise<Object>} Job status object
- *
- * Functionality:
- * 1. Request Preparation:
- *    - Builds headers with authentication
- *    - Includes current user and refresh token
- *
- * 2. API Call:
- *    - GET request to /api/v1/calls/{jobId}
- *    - Retrieves current job status
- *
- * 3. Response Handling:
- *    - Validates response status
- *    - Parses JSON response
- *    - Handles error responses
- *
- * 4. Status Processing:
- *    - Returns job status information
- *    - Logs status for debugging
- *
- * Response Structure:
- * {
- *   "oaiClaimId": "string",
- *   "jobId": "string",
- *   "status": "number",
- *   "phoneNumber": "string",
- *   "initiatorUserId": "string"
- * }
- *
- * Status Values:
- * - 1: Job created, processing
- * - 2: Job ready for WebSocket connection
- *
- * Error Handling:
- * - Handles HTTP error status codes
- * - Parses error responses for details
- * - Shows errors in UI
- * - Throws descriptive error messages
+ * @param {string} token - Authentication token for API requests  
+ * @param {string} claimsBaseUrl - Base URL for the claims API
+ * @returns {Promise<Object>} Job status data
  *
  * Usage Example:
  * const status = await checkJobStatus('job-id-123', 'auth-token');
  */
 async function checkJobStatus(jobId, token, claimsBaseUrl) {
   try {
-    console.log('Checking job status for:', '[ID]');
-
-    // Build headers
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
       'currentUser': localStorage.getItem('currentUser') || '',
       'refresh_token': localStorage.getItem('refreshToken') || '',
+      'outbound-ai-preferred-tenant': (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"|$/g, '')
     };
 
-    const claimsUrl = claimsBaseUrl;
-    const fullUrl = `${claimsUrl}/api/v1/calls/${jobId}`;
-    const response = await fetch(fullUrl, {
+    const response = await fetch(`${claimsBaseUrl}/api/v1/calls/${jobId}`, {
       method: 'GET',
-      headers: headers,
+      headers: headers
     });
 
-    console.log('Job status response status:', response.status);
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Job status error response:', errorText);
-
-      // Try to parse the error as JSON to get structured error info
-      let errorData;
+      let errorMessage = `Failed to check job progress: ${response.status} ${response.statusText}`;
       try {
-        errorData = JSON.parse(errorText);
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorData.detail || 
+                      (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+                      errorMessage;
       } catch (e) {
-        errorData = { detail: errorText };
+        // If JSON parsing fails, use default error message
       }
-
-      // Show error in UI
-      if (window.showError) {
-        window.showError(errorData);
-      }
-
-      // Throw error with the actual detail from the API
-      throw new Error(errorData.detail || `Failed to check job status: ${response.status} ${response.statusText}`);
+      throw new Error(errorMessage);
     }
 
-    const data = await response.json();
-    console.log('Job status:', '[JOB_DATA]');
-
-    // Clear any existing errors on success
-    if (window.hideError) {
-      window.hideError();
-    }
-
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('Error checking job status:', error);
     throw error;
@@ -1398,4 +1416,4 @@ let lastPayerAgentReady = false;
 
 // Export mute state variables for global access
 window.isOutputMuted = isOutputMuted;
-window.isInputMuted = isInputMuted;
+window.isInputMuted = isInputMuted; 

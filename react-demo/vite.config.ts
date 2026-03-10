@@ -22,11 +22,12 @@ export default defineConfig(({ mode }) => {
       ENV: 'dev',
     },
     'pre-staging': {
-      SERVICE_URI: 'wss://pre-staging-calls.phoenix.stg.outbound.ai',
-      TENANT_ROLE_USER_URL: 'https://pre-staging-tenantroleuser.phoenix.stg.outbound.ai',
-      CLAIMS_URL: 'https://pre-staging-claims.phoenix.stg.outbound.ai',
+      SERVICE_URI: 'wss://ent-stg-calls.phoenix.stg.outbound.ai',
+      TENANT_ROLE_USER_URL: 'https://ent-stg-tenantroleuser.phoenix.stg.outbound.ai',
+      CLAIMS_URL: 'https://ent-stg-claims.phoenix.stg.outbound.ai',
       KEYCLOAK_CLIENT_REALM: 'stg',
-      ENV: 'pre-staging',
+      APP_PREFERRED_TENANT: 'bdfe57d8-8d35-4e85-ba1d-bd732d29e5fc',
+      ENV: 'ent-stg',
     },
     prod: {
       SERVICE_URI: 'wss://calls.phoenix.outbound.ai',

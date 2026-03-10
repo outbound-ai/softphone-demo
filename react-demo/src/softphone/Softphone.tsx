@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 import { authApi } from "../AuthApi";
-import { fetchPreferedTenant } from "./api";
 import "./softphone.css";
 
 const serviceUri = import.meta.env.VITE_APP_SERVICE_URI ?? "ws://localhost:5001";
@@ -93,8 +92,8 @@ function App() {
   );
   const [_hasTakenOver, _setHasTakenOver] = useState(false);
   const [_payerAgentReady, _setPayerAgentReady] = useState(false);
-  const [jobStatus, setJobStatus] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [notification, setNotification] = useState<{type: 'success' | 'error' | 'info', message: string} | null>(null);
 
   useEffect(() => {
     if (_conversation) {
@@ -167,7 +166,7 @@ function App() {
    * @returns A promise that resolves to the response data containing the job ID.
    */
 
-  const startPayerRepCall = async (claimId: string) => {
+  const startPayerRepCall = async (claimId: string, tenantId: string) => {
     const token = await authApi.getAuthToken();
     try {
       const response = await fetch(
@@ -178,7 +177,7 @@ function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
             currentUser: localStorage.getItem("currentUser") || "",
-            "outbound-ai-preferred-tenant": await fetchPreferedTenant(),
+            "outbound-ai-preferred-tenant": tenantId,
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
           body: JSON.stringify({
@@ -208,7 +207,7 @@ function App() {
    * @param jobId - The ID of the job to check progress for.
    * @returns A promise that resolves to the response data containing the job status.
    */
-  const checkforJobProgress = useCallback(async (jobId: string) => {
+  const checkforJobProgress = async (jobId: string, tenantId: string) => {
     const token = await authApi.getAuthToken();
     try {
       const response = await fetch(
@@ -219,7 +218,7 @@ function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
             currentUser: localStorage.getItem("currentUser") || "",
-            "outbound-ai-preferred-tenant": await fetchPreferedTenant(),
+            "outbound-ai-preferred-tenant": tenantId,
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
         }
@@ -235,10 +234,10 @@ function App() {
       console.error("Error checking job progress:", error);
       throw error;
     }
-  }, []);
+  };
 
 
-  async function getClaimsDetails(claimId: string) {
+  const getClaimsDetails = async (claimId: string, tenantId: string) => {
     const token = await authApi.getAuthToken();
     try {
       const response = await fetch(
@@ -249,7 +248,7 @@ function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
             currentUser: localStorage.getItem("currentUser") || "",
-            "outbound-ai-preferred-tenant": await fetchPreferedTenant(),
+            "outbound-ai-preferred-tenant": tenantId,
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
         }
@@ -271,14 +270,19 @@ function App() {
    * 
    * Handles the click event for connecting or disconnecting the softphone.
    * If there is no active conversation, it starts a new payer representative call
-   * using the claim ID from the input field. If a conversation exists, it disconnects it.
-   * It also checks the job status periodically until the job is in progress.
+   * using the claim ID from the input field. The input can be either:
+   * - A full URL like: https://integration-console.phoenix.stg.outbound.ai/10003/claims/claim/14029
+   * - Just a claim ID like: 14029
+   * 
+   * The URL format extracts tenant_id (e.g., 10003) and claim ID (e.g., 14029).
+   * If a conversation exists, it disconnects it. It also checks the job status 
+   * periodically until the job is in progress.
    *
    * @param event - The mouse event triggered by clicking the connect button.
    */
   async function handleClickConnectAsync(event: MouseEvent) {
-    setJobStatus(false);
     setIsLoading(true);
+    setNotification(null);
     event.stopPropagation();
 
     if (_conversation == null) {
@@ -286,31 +290,112 @@ function App() {
       _setHasTakenOver(false);
       _setMuted(true);
       _setTranscript([]);
-      const input = document.getElementById("claimid") as HTMLInputElement;
-      const claimId = input.value.split("/").pop() as string;
-      const claimDetails = await getClaimsDetails(claimId);
-      const oaiClaimId = claimDetails.oaiClaimId;
-      const callJob = await startPayerRepCall(oaiClaimId);
-      const jobId = callJob.jobId;
-      const authTokn = await authApi.getAuthToken();
-      if (!jobStatus) {
-        const interval = setInterval(async () => {
-          const jobStatus = await checkforJobProgress(jobId);
-          if (jobStatus.status === 2) {
-            setJobStatus(true);
-            clearInterval(interval);
-            const conversation = await callService.getConversationAsync(
-              jobId,
-              authTokn
-            );
-            _setConversation(conversation);
-            _setConnected(true);
-            setIsLoading(false);
+      
+      try {
+        const input = document.getElementById("claimid") as HTMLInputElement;
+        const inputValue = input.value.trim();
+        
+        if (!inputValue) {
+          throw new Error("Please enter a valid claim URL or ID");
+        }
+        
+        // Parse the input to extract tenant_id and claim ID
+        let tenantId = import.meta.env.VITE_APP_PREFERRED_TENANT; // Default tenant
+        let claimId = inputValue;
+        
+        // Check if input is a URL with the new pattern: .../tenantId/claims/claim/claimId
+        // Only match when tenant ID appears after domain and before /claims/claim/
+        const newUrlPattern = /\/([^\/\s]+)\/claims\/claim\/([^\/\s]+)$/;
+        const newMatch = inputValue.match(newUrlPattern);
+        
+        // Additional check: ensure the matched part is not a domain name
+        const isDomainUrl = /^https?:\/\/[^\/]+\/claims\/claim\//.test(inputValue);
+        
+        if (newMatch && !isDomainUrl) {
+          // New URL format with tenant ID in path
+          tenantId = newMatch[1]; // Extract tenant ID from URL
+          claimId = newMatch[2];   // Extract claim ID from URL
+        } else {
+          // Check for old URL pattern: .../claims/claim/claimId (without tenant ID)
+          const oldUrlPattern = /\/claims\/claim\/([^\/\s]+)/;
+          const oldMatch = inputValue.match(oldUrlPattern);
+          
+          if (oldMatch) {
+            // Old URL format without tenant ID - use env variable
+            claimId = oldMatch[1];
+            tenantId = import.meta.env.VITE_APP_PREFERRED_TENANT;
           } else {
-            console.error("Job is not in progress", jobStatus);
+            // If not a full URL, just extract the last part (could be a path or just ID)
+            claimId = inputValue.split("/").pop() as string;
+          }
+        }
+        
+        if (!claimId) {
+          throw new Error("Please enter a valid claim ID or URL");
+        }
+        
+        console.log(`Using tenant ID: ${tenantId}, claim ID: ${claimId}`);
+        
+        const claimDetails = await getClaimsDetails(claimId, tenantId);
+        const oaiClaimId = claimDetails.oaiClaimId;
+        const callJob = await startPayerRepCall(oaiClaimId, tenantId);
+        const jobId = callJob.jobId;
+        const authTokn = await authApi.getAuthToken();
+        
+        let pollCount = 0;
+        const maxPolls = 60; // 60 seconds timeout
+        
+        const interval = setInterval(async () => {
+          try {
+            pollCount++;
+            
+            if (pollCount > maxPolls) {
+              clearInterval(interval);
+              setIsLoading(false);
+              setNotification({type: 'error', message: 'Call setup timed out. Please try again.'});
+              return;
+            }
+            
+            const jobStatus = await checkforJobProgress(jobId, tenantId);
+            
+            if (jobStatus.status === 2) {
+
+              
+              try {
+                const conversation = await callService.getConversationAsync(
+                  jobId,
+                  authTokn
+                );
+                _setConversation(conversation);
+                _setConnected(true);
+                setIsLoading(false);
+                setNotification({type: 'success', message: 'Call connected successfully'});
+              } catch (error) {
+                setIsLoading(false);
+                const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+                setNotification({type: 'error', message: `Failed to connect call: ${errorMsg}`});
+              }
+            } else if (jobStatus.status === 3 || jobStatus.status === 4) {
+              // Status 3 or 4 typically indicate failure or cancellation
+              clearInterval(interval);
+              setIsLoading(false);
+              const errorMsg = jobStatus.message || jobStatus.error || jobStatus.statusMessage || 'Call setup failed';
+              setNotification({type: 'error', message: `Call failed: ${errorMsg}`});
+            } else {
+              console.log("Job status:", jobStatus.status);
+            }
+          } catch (error) {
+            clearInterval(interval);
+            setIsLoading(false);
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+            setNotification({type: 'error', message: `Error checking job status: ${errorMsg}`});
           }
         }, 1000);
-        return;
+        
+      } catch (error) {
+        setIsLoading(false);
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+        setNotification({type: 'error', message: errorMsg});
       }
     } else {
       _conversation.disconnect();
@@ -395,7 +480,7 @@ function App() {
    */
 
   function createHandleClickSendDtmfCode(code: string) {
-    return function handleClickSendDtmfCode(event: MouseEvent) {
+    return function handleClickSendDtmfCode() {
       if (code && _conversation) {
         _conversation.synthesizeTouchTones(code);
       }
@@ -458,6 +543,13 @@ function App() {
           <div className="loading-text">Call Starting...</div>
         </div>
       )}
+      {/* Notification Display */}
+      {notification && (
+        <div className={`notification notification-${notification.type}`} style={{position: 'fixed', top: '20px', right: '20px', zIndex: 1000, padding: '10px 15px', borderRadius: '4px', color: 'white', backgroundColor: notification.type === 'success' ? '#4CAF50' : notification.type === 'error' ? '#f44336' : '#2196F3'}}>
+          {notification.message}
+          <button onClick={() => setNotification(null)} style={{marginLeft: '10px', background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>×</button>
+        </div>
+      )}
       {/* Header with connection status and title */}
       <div className="header">
         <h1>
@@ -472,8 +564,8 @@ function App() {
       {/* Connection Controls */}
       <div className="controls">
         <>
-          <label>ClaimId</label>
-          <input id="claimid" />
+          <label>Claim URL or ID</label>
+          <input id="claimid" placeholder="https://...claim/14029 or 14029" />
         </>
         {/* Connect/Disconnect Button */}
         {!_conversation?.connected && (

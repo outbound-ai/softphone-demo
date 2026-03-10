@@ -467,99 +467,79 @@ function updateAuthStatus(status, user = null) {
 }
 
 /**
- * Displays an error message in a toast notification.
+ * Displays a notification message with different types (success, error, info).
  *
- * This function shows error messages in a user-friendly toast notification
- * format. It handles different types of error objects and provides
- * intelligent message formatting and auto-hide functionality.
+ * This function shows notifications in a user-friendly format with automatic
+ * dismissal after a timeout. It supports different notification types with
+ * appropriate styling and timing.
  *
- * @param {string|Object} message - Error message or error object
- * @param {string} [title='Error'] - Error title (not currently displayed)
+ * @param {string} type - Notification type ('success', 'error', 'info')
+ * @param {string} message - Notification message to display
  * @returns {void}
  *
  * Functionality:
- * 1. Message Processing: Handles string and object error messages
- * 2. Formatting: Extracts relevant error information from objects
- * 3. Truncation: Truncates long messages for better UX
- * 4. Display: Shows error in toast notification
- * 5. Auto-hide: Automatically hides error after timeout
+ * 1. Creates or updates notification element
+ * 2. Applies appropriate styling based on type
+ * 3. Shows notification with animation
+ * 4. Auto-dismisses after timeout
+ * 5. Handles click to dismiss
  *
- * Error Object Handling:
- * - message.detail: Primary error detail
- * - message.message: Alternative error message
- * - message.error: Error property
- * - JSON.stringify: Fallback for complex objects
- *
- * Truncation Logic:
- * - Truncates messages longer than 200 characters
- * - Preserves full details for specific error types (412, 403, 401, 404)
- * - Adds "..." to truncated messages
- *
- * Auto-hide Timing:
- * - Regular errors: 8 seconds
- * - Detailed errors: 12 seconds
- *
- * Error Types with Full Details:
- * - 412: Precondition Failed
- * - 403: Forbidden
- * - 401: Unauthorized
- * - 404: Not Found
+ * Notification Types:
+ * - success: Green background, 5 second timeout
+ * - error: Red background, 8 second timeout  
+ * - info: Blue background, 5 second timeout
  *
  * Usage Example:
- * showError('Connection failed');
- * showError({ detail: 'API error message', status: 403 });
+ * showNotification('success', 'Call connected successfully');
+ * showNotification('error', 'Connection failed');
  */
-/**
- * Sanitizes error messages to remove sensitive data like IDs and tokens.
- *
- * @param {string} message - The error message to sanitize
- * @returns {string} - Sanitized error message
- */
-function sanitizeErrorMessage(message) {
-  if (typeof message !== 'string') {
-    return message;
-  }
-
-  // Remove UUIDs and IDs completely (including field names)
-  let sanitized = message
-    // Remove UUID patterns (8-4-4-4-12 format)
-    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
-    // Remove ID field patterns completely (including field names)
-    .replace(/OaiClaimId=[^,\s]*/gi, '')
-    .replace(/OaiClaimnId=[^,\s]*/gi, '') // Handle typo in field name
-    .replace(/User=[^,\s]*/gi, '')
-    .replace(/claimId=[^,\s]*/gi, '')
-    .replace(/jobId=[^,\s]*/gi, '')
-    .replace(/tenantId=[^,\s]*/gi, '')
-    .replace(/clientId=[^,\s]*/gi, '')
-    .replace(/realm=[^,\s]*/gi, '')
-    .replace(/oaiClaimId=[^,\s]*/gi, '')
-    .replace(/oaiClaimnId=[^,\s]*/gi, '') // Handle typo in field name
-    .replace(/userId=[^,\s]*/gi, '')
-    .replace(/sessionId=[^,\s]*/gi, '')
-    .replace(/requestId=[^,\s]*/gi, '')
-    .replace(/correlationId=[^,\s]*/gi, '')
-    // Remove any remaining UUID-like patterns
-    .replace(/[0-9a-f]{32}/gi, '')
-    // Remove token patterns
-    .replace(/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, '')
-    .replace(/token=[A-Za-z0-9\-._~+/]+=*/gi, '')
-    // Remove URLs with sensitive data
-    .replace(/https?:\/\/[^\s]+/gi, '')
-    // Remove email addresses
-    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, '');
-
-  // Clean up any extra commas, spaces, or formatting left after removing IDs
-  sanitized = sanitized
-    .replace(/,\s*,/g, ',') // Remove double commas
-    .replace(/^\s*,\s*/g, '') // Remove leading comma
-    .replace(/,\s*$/g, '') // Remove trailing comma
-    .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
-    .trim(); // Remove leading/trailing whitespace
-
-  return sanitized;
+function showNotification(type, message) {
+  // Remove any existing notification
+  hideNotification();
+  
+  const notificationContainer = document.createElement('div');
+  notificationContainer.id = 'notification-container';
+  notificationContainer.className = `notification notification-${type}`;
+  
+  const notificationContent = document.createElement('span');
+  notificationContent.textContent = message;
+  
+  const closeButton = document.createElement('button');
+  closeButton.className = 'notification-close';
+  closeButton.innerHTML = '×';
+  closeButton.addEventListener('click', hideNotification);
+  
+  notificationContainer.appendChild(notificationContent);
+  notificationContainer.appendChild(closeButton);
+  
+  document.body.appendChild(notificationContainer);
+  
+  // Show with animation
+  setTimeout(() => {
+    notificationContainer.classList.add('show');
+  }, 10);
+  
+  // Auto-dismiss timeout
+  const timeout = type === 'error' ? 8000 : 5000;
+  setTimeout(hideNotification, timeout);
 }
 
+/**
+ * Hides any visible notification.
+ *
+ * @returns {void}
+ */
+function hideNotification() {
+  const notification = document.getElementById('notification-container');
+  if (notification) {
+    notification.remove();
+  }
+}
+
+/**
+ * Legacy function to maintain compatibility.
+ * Use showNotification instead for new code.
+ */
 function showError(message, title = 'Error') {
   const errorToast = document.getElementById('errorToast');
   const errorMessage = document.getElementById('errorMessage');
@@ -832,6 +812,26 @@ window.testTakeoverNotification = function() {
   }
 };
 
+// Utility function to sanitize error messages
+function sanitizeErrorMessage(message) {
+  if (typeof message !== 'string') {
+    return message;
+  }
+  // Remove sensitive data patterns
+  let sanitized = message
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '')
+    .replace(/OaiClaimId=[^,\s]*/gi, '')
+    .replace(/claimId=[^,\s]*/gi, '')
+    .replace(/jobId=[^,\s]*/gi, '')
+    .replace(/tenantId=[^,\s]*/gi, '')
+    .replace(/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, '')
+    .replace(/,\s*,/g, ',')
+    .replace(/^\s*,\s*/g, '')
+    .replace(/,\s*$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return sanitized;
+}
 
 /**
  * Global Function Exports
@@ -840,20 +840,18 @@ window.testTakeoverNotification = function() {
  * accessible to other modules and for event handler binding.
  *
  * Exported Functions:
- * - appendMessage: Add system messages to transcript
- * - appendTranscriptMessage: Add detailed transcript messages
- * - updateCallStatus: Update UI based on call connection status
- * - updateDialpadState: Update dialpad button states
- * - updateAudioStatus: Update audio control button states
- * - updateAuthStatus: Update authentication status display
- * - updateAuthMessage: Update auth message (deprecated)
- * - showError: Display error messages in toast
+ * - appendMessage: Add message to chat area
+ * - appendTranscriptMessage: Add transcript message
+ * - updateCallStatus: Update connection status display
+ * - updateDialpadState: Update dialpad UI state
+ * - updateAudioStatus: Update mute/unmute button states
+ * - updateAuthStatus: Update authentication status
+ * - updateAuthMessage: Show auth-related messages
+ * - showError: Display error message toast
  * - hideError: Hide error message toast
+ * - showNotification: Display notification toast
+ * - hideNotification: Hide notification toast
  * - showHumanRepresentativeNotification: Show take over notification
- *
- * Exported Properties:
- * - packetsSent: Getter/setter for sent packet counter
- * - packetsReceived: Getter/setter for received packet counter
  *
  * Purpose: Makes UI functions available globally for use by other modules
  * in the application, particularly main.js for call management.
@@ -867,6 +865,8 @@ window.updateAuthStatus = updateAuthStatus;
 window.updateAuthMessage = updateAuthMessage;
 window.showError = showError;
 window.hideError = hideError;
+window.showNotification = showNotification;
+window.hideNotification = hideNotification;
 window.showHumanRepresentativeNotification = showHumanRepresentativeNotification;
 
 
