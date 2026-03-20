@@ -51,7 +51,7 @@ if (typeof window !== 'undefined') {
  *
  * Usage: Automatically executed when file loads
  */
-(function() {
+(function () {
   // Store the original AudioContext constructor
   const OriginalAudioContext = window.AudioContext || window.webkitAudioContext;
 
@@ -62,7 +62,7 @@ if (typeof window !== 'undefined') {
 
       // Override the addModule method to handle softphone worklet loading
       const originalAddModule = audioContext.audioWorklet.addModule;
-      audioContext.audioWorklet.addModule = async function(moduleURL, options) {
+      audioContext.audioWorklet.addModule = async function (moduleURL, options) {
         // Check if this is the softphone worklet
         if (moduleURL.includes('softphoneAudioWorklet') || moduleURL.includes('SoftPhoneAudioWorklet')) {
           console.log('Intercepted softphone worklet loading request:', moduleURL);
@@ -224,7 +224,7 @@ async function preloadAudioWorklet() {
  * Usage Example:
  * await window.loadAudioWorklet(audioContext, 5);
  */
-window.loadAudioWorklet = async function(audioContext, retries = 3) {
+window.loadAudioWorklet = async function (audioContext, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Attempting to load audio worklet (attempt ${attempt}/${retries})...`);
@@ -442,14 +442,14 @@ function setupConversationHandlers(conversation) {
         window.updateAudioStatus();
       }
 
-          // Clear UI and reload page when connection is lost (call ends)
-    if (!connected) {
-      clearUIAfterCall();
-      // Reload page after a short delay to ensure fresh state for next call
-      setTimeout(() => {
-        reloadPageAfterCall();
-      }, 1000); // 1 second delay to allow UI to update
-    }
+      // Clear UI and reload page when connection is lost (call ends)
+      if (!connected) {
+        clearUIAfterCall();
+        // Reload page after a short delay to ensure fresh state for next call
+        setTimeout(() => {
+          reloadPageAfterCall();
+        }, 1000); // 1 second delay to allow UI to update
+      }
     };
 
     conversation.onTranscriptAvailable = (participantId, participantType, text) => {
@@ -865,19 +865,19 @@ async function handleConnect() {
     // Parse input to extract tenant ID and claim ID
     let tenantId = (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, ''); // Default tenant
     let claimId;
-    
+
     console.log('Raw APP_PREFERRED_TENANT:', process.env.APP_PREFERRED_TENANT);
     console.log('Cleaned tenant ID:', tenantId);
     console.log('Input value:', claimIdValue);
-    
+
     // Check if input has new URL pattern: .../tenantId/claims/claim/claimId
     // Only match when tenant ID appears after domain and before /claims/claim/
     const newUrlPattern = /\/([^\/\s]+)\/claims\/claim\/([^\/\s]+)$/i;
     const newMatch = claimIdValue.match(newUrlPattern);
-    
+
     // Additional check: ensure the matched part is not a domain name
     const isDomainUrl = /^https?:\/\/[^\/]+\/claims\/claim\//.test(claimIdValue);
-    
+
     if (newMatch && !isDomainUrl) {
       // New URL format - extract tenant ID from URL path
       tenantId = newMatch[1];
@@ -888,11 +888,11 @@ async function handleConnect() {
       claimId = window.extractClaimIdFromUrl(claimIdValue);
       console.log('Using old URL format - tenant from env:', tenantId, 'claim:', claimId);
     }
-    
+
     if (!claimId) {
       throw new Error('Please enter a valid claim ID or URL');
     }
-    
+
     console.log(`Using tenant ID: ${tenantId}, claim ID: ${claimId}`);
 
     // Start call using the package
@@ -903,7 +903,7 @@ async function handleConnect() {
     if (!claimsBaseUrl) {
       throw new Error('Claims URL is not configured');
     }
-    
+
     const callData = await startCall(claimId, token, claimsBaseUrl, callType, tenantId);
     console.log('Call started successfully:', '[CALL_DATA]');
 
@@ -914,7 +914,7 @@ async function handleConnect() {
 
     while (jobStatus.status !== 2 && retryCount < maxRetries) {
       console.log(`Job status: ${jobStatus.status}, waiting for status 2...`);
-      
+
       // Check for failure statuses
       if (jobStatus.status === 3 || jobStatus.status === 4) {
         // Status 3 or 4 typically indicate failure or cancellation
@@ -924,7 +924,7 @@ async function handleConnect() {
         }
         throw new Error(`Call failed: ${errorMsg}`);
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
       jobStatus = await checkJobStatus(callData.jobId, token, claimsBaseUrl);
       retryCount++;
@@ -937,7 +937,7 @@ async function handleConnect() {
     console.log('Job is ready for WebSocket connection');
 
     // Get conversation using the package
-    conversation = await callService.getConversationAsync(callData.jobId, token);
+    conversation = await callService.getConversationAsync(callData.jobId, token, tenantId);
     window.conversation = conversation; // Make conversation available globally
     setupConversationHandlers(conversation);
 
@@ -945,7 +945,7 @@ async function handleConnect() {
     if (loadingOverlay) {
       loadingOverlay.style.display = 'none';
     }
-    
+
     // Show success notification
     if (window.showNotification) {
       window.showNotification('success', 'Call connected successfully');
@@ -1180,7 +1180,7 @@ async function startCall(claimId, token, claimsBaseUrl, callType = 'HumanAgent',
     let resolvedClaimId = claimId;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const numericRegex = /^[0-9]+$/;
-    
+
     if (!uuidRegex.test(claimId) && numericRegex.test(claimId)) {
       // Numeric ID, need to resolve to UUID via GET request
       try {
@@ -1188,7 +1188,7 @@ async function startCall(claimId, token, claimsBaseUrl, callType = 'HumanAgent',
           method: 'GET',
           headers: headers
         });
-        
+
         if (getResponse.ok) {
           const claimData = await getResponse.json();
           resolvedClaimId = claimData.oaiClaimId || claimId;
@@ -1227,9 +1227,9 @@ async function startCall(claimId, token, claimsBaseUrl, callType = 'HumanAgent',
       }
 
       // Enhanced error message extraction
-      let errorMessage = errorData.message || errorData.error || errorData.detail || 
-                        (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
-                        `Failed to start call: ${response.status} ${response.statusText}`;
+      let errorMessage = errorData.message || errorData.error || errorData.detail ||
+        (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+        `Failed to start call: ${response.status} ${response.statusText}`;
 
       // Show error notification
       if (window.showNotification) {
@@ -1344,9 +1344,9 @@ async function checkJobStatus(jobId, token, claimsBaseUrl) {
       let errorMessage = `Failed to check job progress: ${response.status} ${response.statusText}`;
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorData.detail || 
-                      (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
-                      errorMessage;
+        errorMessage = errorData.message || errorData.error || errorData.detail ||
+          (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+          errorMessage;
       } catch (e) {
         // If JSON parsing fails, use default error message
       }

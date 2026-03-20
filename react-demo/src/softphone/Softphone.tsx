@@ -93,7 +93,7 @@ function App() {
   const [_hasTakenOver, _setHasTakenOver] = useState(false);
   const [_payerAgentReady, _setPayerAgentReady] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [notification, setNotification] = useState<{type: 'success' | 'error' | 'info', message: string} | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null);
 
   useEffect(() => {
     if (_conversation) {
@@ -198,7 +198,7 @@ function App() {
       throw error;
     }
   };
-  
+
   /**
    * Checks the progress of a job by its ID.
    * Sends a GET request to the claims API to retrieve the job status.
@@ -290,27 +290,27 @@ function App() {
       _setHasTakenOver(false);
       _setMuted(true);
       _setTranscript([]);
-      
+
       try {
         const input = document.getElementById("claimid") as HTMLInputElement;
         const inputValue = input.value.trim();
-        
+
         if (!inputValue) {
           throw new Error("Please enter a valid claim URL or ID");
         }
-        
+
         // Parse the input to extract tenant_id and claim ID
         let tenantId = import.meta.env.VITE_APP_PREFERRED_TENANT; // Default tenant
         let claimId = inputValue;
-        
+
         // Check if input is a URL with the new pattern: .../tenantId/claims/claim/claimId
         // Only match when tenant ID appears after domain and before /claims/claim/
         const newUrlPattern = /\/([^\/\s]+)\/claims\/claim\/([^\/\s]+)$/;
         const newMatch = inputValue.match(newUrlPattern);
-        
+
         // Additional check: ensure the matched part is not a domain name
         const isDomainUrl = /^https?:\/\/[^\/]+\/claims\/claim\//.test(inputValue);
-        
+
         if (newMatch && !isDomainUrl) {
           // New URL format with tenant ID in path
           tenantId = newMatch[1]; // Extract tenant ID from URL
@@ -319,7 +319,7 @@ function App() {
           // Check for old URL pattern: .../claims/claim/claimId (without tenant ID)
           const oldUrlPattern = /\/claims\/claim\/([^\/\s]+)/;
           const oldMatch = inputValue.match(oldUrlPattern);
-          
+
           if (oldMatch) {
             // Old URL format without tenant ID - use env variable
             claimId = oldMatch[1];
@@ -329,58 +329,59 @@ function App() {
             claimId = inputValue.split("/").pop() as string;
           }
         }
-        
+
         if (!claimId) {
           throw new Error("Please enter a valid claim ID or URL");
         }
-        
+
         console.log(`Using tenant ID: ${tenantId}, claim ID: ${claimId}`);
-        
+
         const claimDetails = await getClaimsDetails(claimId, tenantId);
         const oaiClaimId = claimDetails.oaiClaimId;
         const callJob = await startPayerRepCall(oaiClaimId, tenantId);
         const jobId = callJob.jobId;
         const authTokn = await authApi.getAuthToken();
-        
+
         let pollCount = 0;
         const maxPolls = 60; // 60 seconds timeout
-        
+
         const interval = setInterval(async () => {
           try {
             pollCount++;
-            
+
             if (pollCount > maxPolls) {
               clearInterval(interval);
               setIsLoading(false);
-              setNotification({type: 'error', message: 'Call setup timed out. Please try again.'});
+              setNotification({ type: 'error', message: 'Call setup timed out. Please try again.' });
               return;
             }
-            
+
             const jobStatus = await checkforJobProgress(jobId, tenantId);
-            
+
             if (jobStatus.status === 2) {
 
-              
+
               try {
                 const conversation = await callService.getConversationAsync(
                   jobId,
-                  authTokn
+                  authTokn,
+                  tenantId
                 );
                 _setConversation(conversation);
                 _setConnected(true);
                 setIsLoading(false);
-                setNotification({type: 'success', message: 'Call connected successfully'});
+                setNotification({ type: 'success', message: 'Call connected successfully' });
               } catch (error) {
                 setIsLoading(false);
                 const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-                setNotification({type: 'error', message: `Failed to connect call: ${errorMsg}`});
+                setNotification({ type: 'error', message: `Failed to connect call: ${errorMsg}` });
               }
             } else if (jobStatus.status === 3 || jobStatus.status === 4) {
               // Status 3 or 4 typically indicate failure or cancellation
               clearInterval(interval);
               setIsLoading(false);
               const errorMsg = jobStatus.message || jobStatus.error || jobStatus.statusMessage || 'Call setup failed';
-              setNotification({type: 'error', message: `Call failed: ${errorMsg}`});
+              setNotification({ type: 'error', message: `Call failed: ${errorMsg}` });
             } else {
               console.log("Job status:", jobStatus.status);
             }
@@ -388,14 +389,14 @@ function App() {
             clearInterval(interval);
             setIsLoading(false);
             const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-            setNotification({type: 'error', message: `Error checking job status: ${errorMsg}`});
+            setNotification({ type: 'error', message: `Error checking job status: ${errorMsg}` });
           }
         }, 1000);
-        
+
       } catch (error) {
         setIsLoading(false);
         const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-        setNotification({type: 'error', message: errorMsg});
+        setNotification({ type: 'error', message: errorMsg });
       }
     } else {
       _conversation.disconnect();
@@ -545,9 +546,9 @@ function App() {
       )}
       {/* Notification Display */}
       {notification && (
-        <div className={`notification notification-${notification.type}`} style={{position: 'fixed', top: '20px', right: '20px', zIndex: 1000, padding: '10px 15px', borderRadius: '4px', color: 'white', backgroundColor: notification.type === 'success' ? '#4CAF50' : notification.type === 'error' ? '#f44336' : '#2196F3'}}>
+        <div className={`notification notification-${notification.type}`} style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000, padding: '10px 15px', borderRadius: '4px', color: 'white', backgroundColor: notification.type === 'success' ? '#4CAF50' : notification.type === 'error' ? '#f44336' : '#2196F3' }}>
           {notification.message}
-          <button onClick={() => setNotification(null)} style={{marginLeft: '10px', background: 'none', border: 'none', color: 'white', cursor: 'pointer'}}>×</button>
+          <button onClick={() => setNotification(null)} style={{ marginLeft: '10px', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>×</button>
         </div>
       )}
       {/* Header with connection status and title */}
