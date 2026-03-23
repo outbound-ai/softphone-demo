@@ -875,6 +875,31 @@ async function handleConnect() {
     const claimIdInput = document.getElementById('claimId');
     const claimIdValue = claimIdInput ? claimIdInput.value.trim() : '';
 
+    // Extract and store tenant from URL if present (new URL pattern support)
+    // New URL pattern: /{tenant}/claims/claim/{claimId}
+    // Old URL pattern: /claims/claim/{claimId}
+    const tenantFromUrl = window.extractTenantFromUrl(claimIdValue);
+    if (tenantFromUrl) {
+      // New URL pattern - store the extracted tenant
+      localStorage.setItem('preferredTenant', tenantFromUrl);
+      console.log('Extracted tenant from URL:', tenantFromUrl);
+    } else {
+      // Old URL pattern or no tenant in URL - fetch preferred tenant from API
+      console.log('Old URL pattern detected, fetching preferred tenant from API...');
+      const fetchedTenant = await window.authApi.fetchPreferredTenant();
+      if (fetchedTenant) {
+        localStorage.setItem('preferredTenant', fetchedTenant);
+        console.log('Fetched preferred tenant from API:', fetchedTenant);
+      } else {
+        // Fall back to environment variable if API call fails
+        const envTenant = window.getPreferredTenant();
+        if (envTenant) {
+          localStorage.setItem('preferredTenant', envTenant);
+          console.log('Using preferred tenant from environment (fallback):', envTenant);
+        }
+      }
+    }
+
     // Extract claim ID from input (could be a URL or just the ID)
     const claimId = window.extractClaimIdFromUrl(claimIdValue);
     if (!claimId) {
@@ -1142,7 +1167,7 @@ async function startCall(claimId, token, claimsBaseUrl, callType = 'HumanAgent')
       'Authorization': `Bearer ${token}`,
       'currentUser': localStorage.getItem('currentUser') || '',
       'refresh_token': localStorage.getItem('refreshToken') || '',
-      'outbound-ai-preferred-tenant': (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '')
+      'outbound-ai-preferred-tenant': localStorage.getItem('preferredTenant') || (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '')
     };
 
     const claimsUrl = claimsBaseUrl;
@@ -1220,7 +1245,7 @@ async function resolveClaimId(claimId, token, claimsBaseUrl) {
     'Authorization': `Bearer ${token}`,
     'currentUser': localStorage.getItem('currentUser') || '',
     'refresh_token': localStorage.getItem('refreshToken') || '',
-    'outbound-ai-preferred-tenant': (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '')
+    'outbound-ai-preferred-tenant': localStorage.getItem('preferredTenant') || (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '')
   };
 
   const claimsUrl = claimsBaseUrl;
@@ -1310,7 +1335,7 @@ async function checkJobStatus(jobId, token, claimsBaseUrl) {
       'Authorization': `Bearer ${token}`,
       'currentUser': localStorage.getItem('currentUser') || '',
       'refresh_token': localStorage.getItem('refreshToken') || '',
-      'outbound-ai-preferred-tenant': (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '')
+      'outbound-ai-preferred-tenant': localStorage.getItem('preferredTenant') || (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '')
     };
 
     const claimsUrl = claimsBaseUrl;

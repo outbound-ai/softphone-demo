@@ -95,7 +95,7 @@ function App() {
   const [_payerAgentReady, _setPayerAgentReady] = useState(false);
   const [jobStatus, setJobStatus] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [notification, setNotification] = useState<{type: 'success' | 'error' | 'info', message: string} | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null);
 
   enum CallTypeEnum {
     humanAgent = 'HumanAgent',
@@ -185,7 +185,6 @@ function App() {
       const timer = setTimeout(() => {
         setNotification(null);
       }, 5000);
-      
       return () => clearTimeout(timer);
     }
   }, [notification]);
@@ -199,7 +198,7 @@ function App() {
    * @returns A promise that resolves to the response data containing the job ID.
    */
 
-  const startPayerRepCall = async (claimId: string) => {
+  const startPayerRepCall = async (claimId: string, tenant: string) => {
     const token = await authApi.getAuthToken();
     try {
       const response = await fetch(
@@ -210,7 +209,7 @@ function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
             currentUser: localStorage.getItem("currentUser") || "",
-            "outbound-ai-preferred-tenant": import.meta.env.VITE_APP_PREFERRED_TENANT,
+            "outbound-ai-preferred-tenant": tenant,
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
           body: JSON.stringify({
@@ -225,9 +224,9 @@ function App() {
         try {
           const errorData = await response.json();
           // Try to extract error message from various possible fields
-          errorMessage = errorData.message || errorData.error || errorData.detail || 
-                        (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
-                        errorMessage;
+          errorMessage = errorData.message || errorData.error || errorData.detail ||
+            (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+            errorMessage;
         } catch (e) {
           // If JSON parsing fails, use default error message
         }
@@ -239,11 +238,11 @@ function App() {
     } catch (error) {
       console.error("Error starting call:", error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      setNotification({type: 'error', message: errorMsg});
+      setNotification({ type: 'error', message: errorMsg });
       throw error;
     }
   };
-  
+
   /**
    * Checks the progress of a job by its ID.
    * Sends a GET request to the claims API to retrieve the job status.
@@ -263,7 +262,7 @@ function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
             currentUser: localStorage.getItem("currentUser") || "",
-            "outbound-ai-preferred-tenant": import.meta.env.VITE_APP_PREFERRED_TENANT,
+            "outbound-ai-preferred-tenant": localStorage.getItem("preferredTenant") || import.meta.env.VITE_APP_PREFERRED_TENANT,
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
         }
@@ -273,9 +272,9 @@ function App() {
         let errorMessage = `Failed to check job progress: ${response.status} ${response.statusText}`;
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorData.detail || 
-                        (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
-                        errorMessage;
+          errorMessage = errorData.message || errorData.error || errorData.detail ||
+            (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+            errorMessage;
         } catch (e) {
           // If JSON parsing fails, use default error message
         }
@@ -287,13 +286,13 @@ function App() {
     } catch (error) {
       console.error("Error checking job progress:", error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      setNotification({type: 'error', message: errorMsg});
+      setNotification({ type: 'error', message: errorMsg });
       throw error;
     }
   }, []);
 
 
-  async function getClaimsDetails(claimId: string) {
+  async function getClaimsDetails(claimId: string, tenant: string) {
     const token = await authApi.getAuthToken();
     try {
       const response = await fetch(
@@ -304,7 +303,7 @@ function App() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
             currentUser: localStorage.getItem("currentUser") || "",
-            "outbound-ai-preferred-tenant": import.meta.env.VITE_APP_PREFERRED_TENANT,
+            "outbound-ai-preferred-tenant": tenant,
             refresh_token: localStorage.getItem("refreshToken") || "",
           },
         }
@@ -314,9 +313,9 @@ function App() {
         let errorMessage = `Failed to fetch claim details: ${response.status} ${response.statusText}`;
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorData.detail || 
-                        (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
-                        errorMessage;
+          errorMessage = errorData.message || errorData.error || errorData.detail ||
+            (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : null) ||
+            errorMessage;
         } catch (e) {
           // If JSON parsing fails, use default error message
         }
@@ -328,7 +327,7 @@ function App() {
     } catch (error) {
       console.error("Error fetching claim details:", error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      setNotification({type: 'error', message: errorMsg});
+      setNotification({ type: 'error', message: errorMsg });
       throw error;
     }
   }
@@ -353,41 +352,63 @@ function App() {
       _setHasTakenOver(false);
       _setMuted(true);
       _setTranscript([]);
-      
+
       try {
         const input = document.getElementById("claimid") as HTMLInputElement;
         const claimId = input.value.split("/").pop() as string;
-        
+
+        const newUrlPattern = /\/([^\/\s]+)\/claims\/claim\/([^\/\s]+)$/;
+        const oldUrlPattern = /\/claims\/claim\/([^\/\s]+)/;
+        const isDomainUrl = /^https?:\/\/[^\/]+\/claims\/claim\//.test(input.value);
+
+        // new URL pattern: /{tenant}/claims/claim/{claimId}
+        // old URL pattern: /claims/claim/{claimId}
+        // if new  url we will extract tenant and claimId, if old url we will extract claimId only and if tenant is available we will use it otherwise we will use prefered tenant from env variable
+
+        let match = input.value.match(newUrlPattern);
+        if (match && !isDomainUrl) {
+          const tenant = match[1];
+          if (tenant) {
+            localStorage.setItem("preferredTenant", tenant);
+          }
+        } else {
+          match = input.value.match(oldUrlPattern);
+          localStorage.setItem("preferredTenant", import.meta.env.VITE_APP_PREFERRED_TENANT);
+        }
+
+
         if (!claimId) {
           throw new Error("Please enter a valid claim ID");
         }
-        
-        const claimDetails = await getClaimsDetails(claimId);
+
+        const tenant = localStorage.getItem("preferredTenant") || import.meta.env.VITE_APP_PREFERRED_TENANT;
+
+        const claimDetails = await getClaimsDetails(claimId, tenant);
         const oaiClaimId = claimDetails.oaiClaimId;
-        const callJob = await startPayerRepCall(oaiClaimId);
+        const callJob = await startPayerRepCall(oaiClaimId, tenant);
         const jobId = callJob.jobId;
         const authTokn = await authApi.getAuthToken();
-        
+
         let pollCount = 0;
         const maxPolls = 60; // 60 seconds timeout
-        
+
         const interval = setInterval(async () => {
           try {
             pollCount++;
-            
+
             if (pollCount > maxPolls) {
               clearInterval(interval);
               setIsLoading(false);
-              setNotification({type: 'error', message: 'Call setup timed out. Please try again.'});
+              setNotification({ type: 'error', message: 'Call setup timed out. Please try again.' });
               return;
             }
-            
+
             const jobStatus = await checkforJobProgress(jobId);
-            
+
             if (jobStatus.status === 2) {
               setJobStatus(true);
               clearInterval(interval);
-              
+
               try {
                 const conversation = await callService.getConversationAsync(
                   jobId,
@@ -396,18 +417,18 @@ function App() {
                 _setConversation(conversation);
                 _setConnected(true);
                 setIsLoading(false);
-                setNotification({type: 'success', message: 'Call connected successfully'});
+                setNotification({ type: 'success', message: 'Call connected successfully' });
               } catch (error) {
                 setIsLoading(false);
                 const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-                setNotification({type: 'error', message: `Failed to connect call: ${errorMsg}`});
+                setNotification({ type: 'error', message: `Failed to connect call: ${errorMsg}` });
               }
             } else if (jobStatus.status === 3 || jobStatus.status === 4) {
               // Status 3 or 4 typically indicate failure or cancellation
               clearInterval(interval);
               setIsLoading(false);
               const errorMsg = jobStatus.message || jobStatus.error || jobStatus.statusMessage || 'Call setup failed';
-              setNotification({type: 'error', message: `Call failed: ${errorMsg}`});
+              setNotification({ type: 'error', message: `Call failed: ${errorMsg}` });
             } else {
               console.log("Job status:", jobStatus.status);
             }
@@ -591,7 +612,7 @@ function App() {
       </div>
       {/* Connection Controls */}
       <div className="controls">
-         <>
+        <>
           <select id="calltype" onChange={handelCallType}>
             <option value={CallTypeEnum.humanAgent}>Payer Rep</option>
             <option value={CallTypeEnum.standard}>Manual Call</option>

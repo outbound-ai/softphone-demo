@@ -591,6 +591,8 @@ function getCurrentUser() {
  *
  * This function makes an API call to retrieve the user's preferred tenant
  * information. It uses the current authentication token for authorization.
+ * It tries the new endpoint first (TENANT_ROLE_USER_URL) and falls back to 
+ * the old endpoint (CLAIMS_URL) if needed for backward compatibility.
  *
  * @returns {Promise<string|null>} Tenant ID if successful, null if failed
  *
@@ -598,21 +600,25 @@ function getCurrentUser() {
  * 1. Token Validation: Ensures authentication token is available
  * 2. API Call: Makes GET request to tenant API endpoint
  * 3. Response Processing: Handles successful and failed responses
- * 4. Error Handling: Returns null on any failure
+ * 4. Fallback Logic: Tries old endpoint if new one fails
+ * 5. Error Handling: Returns null on any failure
  *
- * API Endpoint: /api/v1/tenants/preferred
+ * API Endpoints:
+ * - New: /api/v1/preferences/highest/outbound-ai-preferred-tenant (TENANT_ROLE_USER_URL)
+ * - Old: /api/v1/tenants/preferred (CLAIMS_URL)
  *
  * Request Headers:
  * - Content-Type: application/json
  * - Authorization: Bearer token
- * - currentUser: Current user information
- * - refresh_token: Refresh token
+ * - currentUser: Current user information (old endpoint)
+ * - refresh_token: Refresh token (old endpoint)
  *
  * Error Handling:
  * - Returns null if no authentication token
  * - Returns null on API errors
  * - Logs warnings for failed requests
  * - Logs detailed error information
+ * - Attempts fallback to old endpoint before giving up
  *
  * Usage Example:
  * const tenantId = await fetchPreferredTenant();
@@ -627,25 +633,55 @@ async function fetchPreferredTenant() {
       return null;
     }
 
+    const tenantRoleUserUrl = (process.env.APP_TENANT_ROLE_USER_URL || '').replace(/^\"|\"$/g, '');
     const claimsUrl = (process.env.APP_CLAIMS_URL || '').replace(/^\"|\"$/g, ''); // Remove quotes from environment variable
 
-    const response = await fetch(`${claimsUrl}/api/v1/tenants/preferred`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'currentUser': localStorage.getItem('currentUser') || '',
-        'refresh_token': localStorage.getItem('refreshToken') || '',
-      },
-    });
+    // Try new endpoint first (TENANT_ROLE_USER_URL)
+    if (tenantRoleUserUrl) {
+      try {
+        const response = await fetch(`${tenantRoleUserUrl}/api/v1/preferences/highest/outbound-ai-preferred-tenant`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
-    if (response.ok) {
-      const data = await response.json();
-      return data.tenantId;
-    } else {
-      console.warn('Failed to fetch preferred tenant, user may not be assigned to a tenant');
-      return null;
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Successfully fetched preferred tenant from new endpoint');
+          return data.value;
+        } else {
+          console.warn('Failed to fetch preferred tenant from new endpoint, trying old endpoint');
+        }
+      } catch (error) {
+        console.warn('Error fetching preferred tenant from new endpoint, trying old endpoint:', error.message);
+      }
     }
+
+    // Fall back to old endpoint (CLAIMS_URL)
+    if (claimsUrl) {
+      const response = await fetch(`${claimsUrl}/api/v1/tenants/preferred`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'currentUser': localStorage.getItem('currentUser') || '',
+          'refresh_token': localStorage.getItem('refreshToken') || '',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Successfully fetched preferred tenant from old endpoint');
+        return data.tenantId;
+      } else {
+        console.warn('Failed to fetch preferred tenant from old endpoint, user may not be assigned to a tenant');
+        return null;
+      }
+    }
+
+    return null;
   } catch (error) {
     console.error('Error fetching preferred tenant:', error);
     return null;

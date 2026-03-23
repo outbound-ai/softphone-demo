@@ -1,6 +1,18 @@
 # Outbound.Calls.Softphone.Demo
 A demonstration of using the [@outbound-ai/softphone] NPM package package with a [create-react-app](https://create-react-app.dev/) project template.
 
+## Recent Changes
+
+### URL Pattern Support & Tenant Management
+- ✅ **Multi-tenant URL support**: New pattern `/{tenant}/claims/claim/{claimId}` extracts tenant from URL
+- ✅ **Backward compatibility**: Old pattern `/claims/claim/{claimId}` still supported with dynamic tenant fetching  
+- ✅ **Dual API endpoint support**: Automatically tries new tenant API endpoint with fallback to legacy endpoint
+- ✅ **Smart tenant resolution**:
+  - New URLs: Tenant extracted from URL path
+  - Old URLs: Fetched dynamically from API
+  - Fallback: Uses environment variable `VITE_APP_PREFERRED_TENANT`
+- ✅ **Enhanced API integration**: Updated `fetchPreferedTenant()` to support both new and legacy endpoints
+
 ## Notes
 - You will need to configure your ~/.npmrc file like this to access the [@outbound-ai/softphone] NPM package and run ```npm install```.
 
@@ -55,3 +67,135 @@ and synthesized speech functionality.
 - Synthesized speech input and submit form.
 - Participant list
 - End call - Hangup
+
+## URL Pattern Support
+
+The application supports multiple URL formats for claim IDs, providing flexibility and backward compatibility:
+
+### New URL Pattern (Multi-Tenant)
+```
+/{tenant}/claims/claim/{claimId}
+```
+**Example:** `/abc123/claims/claim/456`
+
+- Extracts tenant ID (`abc123`) from the URL path
+- Extracts claim ID (`456`) from the URL path
+- Stores tenant in localStorage for all API calls
+- No additional API call needed for tenant
+
+### Old URL Pattern (Legacy)
+```
+/claims/claim/{claimId}
+```
+**Example:** `/claims/claim/456`
+
+- Extracts only the claim ID from the URL
+- Dynamically fetches preferred tenant via API:
+  - **Primary endpoint:** `VITE_APP_TENANT_ROLE_USER_URL/api/v1/preferences/highest/outbound-ai-preferred-tenant`
+  - **Fallback endpoint:** `VITE_APP_CLAIMS_URL/api/v1/tenants/preferred`
+- Falls back to `VITE_APP_PREFERRED_TENANT` environment variable if both API calls fail
+
+### Direct Claim ID
+```
+{claimId}
+```
+**Examples:** 
+- UUID: `8dc125d6-1da5-4f28-b06c-60c8d322ad8f`
+- Numeric: `456`
+
+- Fetches preferred tenant from API (same as old URL pattern)
+- Supports both UUID and numeric claim IDs
+
+### Full Domain URLs
+```
+https://console.example.com/claims/claim/{claimId}
+```
+- Automatically extracts claim ID from full domain URLs
+- Uses standard tenant fetching logic
+
+## API Endpoints
+
+### Tenant Configuration
+The application uses two endpoints for fetching preferred tenant (with automatic fallback):
+
+1. **New Endpoint (Primary):**
+   - URL: `VITE_APP_TENANT_ROLE_USER_URL/api/v1/preferences/highest/outbound-ai-preferred-tenant`
+   - Response: `{ value: "tenant-id" }`
+
+2. **Old Endpoint (Fallback):**
+   - URL: `VITE_APP_CLAIMS_URL/api/v1/tenants/preferred`
+   - Response: `{ tenantId: "tenant-id" }`
+
+This dual-endpoint approach ensures backward compatibility while supporting new infrastructure.
+
+## Technical Implementation
+
+### Modified Components
+
+**src/softphone/api.ts:**
+- `fetchPreferedTenant()` function for retrieving preferred tenant
+- Uses `VITE_APP_TENANT_ROLE_USER_URL` endpoint
+- Returns tenant value from API response
+
+**src/softphone/Softphone.tsx:**
+- Enhanced `handleClickConnectAsync()` with URL pattern detection
+- Tenant extraction logic using regex patterns:
+  - `newUrlPattern`: `/\/([^\/\s]+)\/claims\/claim\/([^\/\s]+)$/`
+  - `oldUrlPattern`: `/\/claims\/claim\/([^\/\s]+)/`
+- Stores extracted tenant in `localStorage.preferredTenant`
+- Falls back to `VITE_APP_PREFERRED_TENANT` for old URLs
+- Updated all API calls to include tenant in headers
+
+### Tenant Resolution Flow
+
+```typescript
+// 1. Parse URL from input
+const input = document.getElementById("claimid") as HTMLInputElement;
+const inputValue = input.value;
+
+// 2. Check URL pattern
+const newUrlPattern = /\/([^\/\s]+)\/claims\/claim\/([^\/\s]+)$/;
+const match = inputValue.match(newUrlPattern);
+
+// 3. Extract or fetch tenant
+if (match && !isDomainUrl) {
+  // New pattern - extract tenant from URL
+  const tenant = match[1];
+  localStorage.setItem("preferredTenant", tenant);
+} else {
+  // Old pattern - use environment variable
+  localStorage.setItem("preferredTenant", import.meta.env.VITE_APP_PREFERRED_TENANT);
+}
+
+// 4. Use tenant in API calls
+const tenant = localStorage.getItem("preferredTenant") || 
+               import.meta.env.VITE_APP_PREFERRED_TENANT;
+```
+
+### API Integration
+
+All API calls include the tenant in request headers:
+```typescript
+headers: {
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${token}`,
+  "currentUser": localStorage.getItem("currentUser") || "",
+  "outbound-ai-preferred-tenant": tenant,
+  "refresh_token": localStorage.getItem("refreshToken") || "",
+}
+```
+
+### Environment Configuration
+
+The application uses Vite's environment variable system with mode-specific configurations in `vite.config.ts`:
+- `local`: Local development
+- `dev`: Development environment
+- `pre-staging`: Staging environment
+- `prod`: Production environment
+
+Each mode defines:
+- `SERVICE_URI`: WebSocket service endpoint
+- `TENANT_ROLE_USER_URL`: Tenant preferences API
+- `CLAIMS_URL`: Claims API endpoint
+- `KEYCLOAK_CLIENT_REALM`: Authentication realm
+- `APP_PREFERRED_TENANT`: Default tenant ID
