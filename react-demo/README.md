@@ -3,6 +3,14 @@ A demonstration of using the [@outbound-ai/softphone] NPM package package with a
 
 ## Recent Changes
 
+### Softphone Package v8.0.7 Update
+- 🔄 **Upgraded to @outbound-ai/softphone v8.0.7**
+- ✅ **New `getConversationAsync` signature**: Now requires tenant parameter
+  ```typescript
+  callService.getConversationAsync(jobId, token, tenant)
+  ```
+- ✅ **Tenant context propagation**: Tenant ID now passed to WebSocket connection initialization
+
 ### URL Pattern Support & Tenant Management
 - ✅ **Multi-tenant URL support**: New pattern `/{tenant}/claims/claim/{claimId}` extracts tenant from URL
 - ✅ **Backward compatibility**: Old pattern `/claims/claim/{claimId}` still supported with dynamic tenant fetching  
@@ -137,6 +145,12 @@ This dual-endpoint approach ensures backward compatibility while supporting new 
 - Uses `VITE_APP_TENANT_ROLE_USER_URL` endpoint
 - Returns tenant value from API response
 
+- **Updated `getConversationAsync()` call** to pass tenant parameter:
+  ```typescript
+  const tenant = localStorage.getItem("preferredTenant") || 
+                 import.meta.env.VITE_APP_PREFERRED_TENANT;
+  conversation = await callService.getConversationAsync(jobId, token, tenant);
+  ```
 **src/softphone/Softphone.tsx:**
 - Enhanced `handleClickConnectAsync()` with URL pattern detection
 - Tenant extraction logic using regex patterns:
@@ -199,3 +213,36 @@ Each mode defines:
 - `CLAIMS_URL`: Claims API endpoint
 - `KEYCLOAK_CLIENT_REALM`: Authentication realm
 - `APP_PREFERRED_TENANT`: Default tenant ID
+
+## Breaking Changes in v8.0.7
+
+### Updated `getConversationAsync` Method
+
+The `@outbound-ai/softphone` package (v8.0.7) introduced a **breaking change** to the `getConversationAsync` method signature:
+
+**Previous signature (v8.0.6 and earlier):**
+```typescript
+callService.getConversationAsync(jobId: string, token: string)
+```
+
+**New signature (v8.0.7+):**
+```typescript
+callService.getConversationAsync(jobId: string, token: string, tenant: string)
+```
+
+**Migration:**
+```typescript
+// Before (v8.0.6)
+const conversation = await callService.getConversationAsync(jobId, token);
+
+// After (v8.0.7+)
+const tenant = localStorage.getItem("preferredTenant") || 
+               import.meta.env.VITE_APP_PREFERRED_TENANT;
+const conversation = await callService.getConversationAsync(jobId, token, tenant);
+```
+
+**Why this change?**
+- Enables multi-tenant support at the WebSocket connection level
+- Ensures proper tenant context for all call operations
+- Aligns with new URL pattern support for tenant-specific routing
+- Provides tenant isolation for enhanced security and data segregation

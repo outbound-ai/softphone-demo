@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 import { authApi } from "../AuthApi";
-import { fetchPreferedTenant } from "./api";
 import "./softphone.css";
 
 const serviceUri = import.meta.env.VITE_APP_SERVICE_URI ?? "ws://localhost:5001";
@@ -412,7 +411,8 @@ function App() {
               try {
                 const conversation = await callService.getConversationAsync(
                   jobId,
-                  authTokn
+                  authTokn,
+                  tenant
                 );
                 _setConversation(conversation);
                 _setConnected(true);

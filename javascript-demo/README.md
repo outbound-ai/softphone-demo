@@ -4,6 +4,14 @@ A browser-based softphone demo application using the @outbound-ai/softphone pack
 
 ## Recent Changes
 
+### Softphone Package v8.0.7 Update
+- 🔄 **Upgraded to @outbound-ai/softphone v8.0.7**
+- ✅ **New `getConversationAsync` signature**: Now requires tenant parameter
+  ```javascript
+  callService.getConversationAsync(jobId, token, tenant)
+  ```
+- ✅ **Tenant context propagation**: Tenant ID now passed to WebSocket connection initialization
+
 ### URL Pattern Support & Tenant Management
 - ✅ **Multi-tenant URL support**: New pattern `/{tenant}/claims/claim/{claimId}` extracts tenant from URL
 - ✅ **Backward compatibility**: Old pattern `/claims/claim/{claimId}` still supported with dynamic tenant fetching
@@ -27,7 +35,7 @@ A browser-based softphone demo application using the @outbound-ai/softphone pack
 - Stable internet connection for WebSocket communication
 
 ## Setup and Installation
-
+6) - Core softphone functionality with tenant support
 ### 1. Install Dependencies
 
 ```bash
@@ -175,6 +183,12 @@ The application implements a sophisticated tenant resolution system:
 - Tenant extraction and storage logic
 - Modified API headers to use `localStorage.preferredTenant`
 - Updated `startCall()`, `resolveClaimId()`, `checkJobStatus()` functions
+- **Updated `getConversationAsync()` call** to pass tenant parameter:
+  ```javascript
+  const tenant = localStorage.getItem('preferredTenant') || 
+                 (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '');
+  conversation = await callService.getConversationAsync(callData.jobId, token, tenant);
+  ```
 
 ### API Header Changes
 
@@ -185,6 +199,38 @@ All API calls now include:
 ```
 
 This ensures tenant context is maintained across all API interactions.
+
+## Breaking Changes in v8.0.7
+
+### Updated `getConversationAsync` Method
+
+The `@outbound-ai/softphone` package (v8.0.7) introduced a **breaking change** to the `getConversationAsync` method signature:
+
+**Previous signature (v8.0.6 and earlier):**
+```javascript
+callService.getConversationAsync(jobId, token)
+```
+
+**New signature (v8.0.7+):**
+```javascript
+callService.getConversationAsync(jobId, token, tenant)
+```
+
+**Migration:**
+```javascript
+// Before (v8.0.5)
+conversation = await callService.getConversationAsync(callData.jobId, token);
+
+// After (v8.0.6+)
+const tenant = localStorage.getItem('preferredTenant') || 
+               (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '');
+conversation = await callService.getConversationAsync(callData.jobId, token, tenant);
+```
+
+**Why this change?**
+- Enables multi-tenant support at the WebSocket connection level
+- Ensures proper tenant context for all call operations
+- Aligns with new URL pattern support for tenant-specific routing
 
 ## Troubleshooting
 

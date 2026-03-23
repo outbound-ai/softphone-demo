@@ -939,7 +939,8 @@ async function handleConnect() {
     console.log('Job is ready for WebSocket connection');
 
     // Get conversation using the package
-    conversation = await callService.getConversationAsync(callData.jobId, token);
+    const tenant = localStorage.getItem('preferredTenant') || (process.env.APP_PREFERRED_TENANT || '').replace(/^\"|\"$/g, '');
+    conversation = await callService.getConversationAsync(callData.jobId, token, tenant);
     window.conversation = conversation; // Make conversation available globally
     setupConversationHandlers(conversation, callType);
 
