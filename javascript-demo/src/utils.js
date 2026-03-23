@@ -364,6 +364,64 @@ function getPreferredTenant() {
 }
 
 /**
+ * Extracts tenant ID from claim URL input.
+ *
+ * This function analyzes the input URL to determine if it follows the new
+ * URL pattern with tenant information or the old pattern without it.
+ * It supports both formats for backward compatibility.
+ *
+ * @param {string} input - Input string containing claim URL
+ * @returns {string|null} Extracted tenant ID or null if not found
+ *
+ * Functionality:
+ * 1. Pattern Matching: Checks for new and old URL patterns
+ * 2. Tenant Extraction: Extracts tenant from new URL pattern
+ * 3. Domain Detection: Detects if URL is a full domain URL
+ * 4. Null Handling: Returns null if no tenant found in URL
+ *
+ * Supported URL Patterns:
+ * - New: /{tenant}/claims/claim/{claimId} (e.g., /abc123/claims/claim/456)
+ * - Old: /claims/claim/{claimId} (no tenant, returns null)
+ * - Domain URLs are handled separately
+ *
+ * Pattern Detection:
+ * - New pattern: Looks for /tenant/claims/claim/
+ * - Old pattern: Looks for /claims/claim/
+ * - Distinguishes between relative and absolute URLs
+ *
+ * Usage Example:
+ * const tenant = extractTenantFromUrl('/abc123/claims/claim/456');
+ * console.log(tenant); // "abc123"
+ *
+ * const noTenant = extractTenantFromUrl('/claims/claim/456');
+ * console.log(noTenant); // null
+ */
+function extractTenantFromUrl(input) {
+  if (!input) {
+    return null;
+  }
+
+  // Check if this is a domain URL (starts with http:// or https://)
+  const isDomainUrl = /^https?:\/\/[^\/]+\/claims\/claim\//.test(input);
+  if (isDomainUrl) {
+    // Domain URLs don't have tenant in the path
+    return null;
+  }
+
+  // New URL pattern: /{tenant}/claims/claim/{claimId}
+  const newUrlPattern = /\/([^\/\s]+)\/claims\/claim\/([^\/\s]+)$/;
+  const match = input.match(newUrlPattern);
+  
+  if (match) {
+    // match[1] is the tenant, match[2] is the claimId
+    return match[1];
+  }
+
+  // Old URL pattern or no tenant in URL
+  return null;
+}
+
+/**
  * Global Function Exports
  *
  * These functions and constants are exported to the global window object
@@ -390,6 +448,7 @@ window.CallParticipantTypeEnum = CallParticipantTypeEnum;
 window.participantTypeToTitleMapping = participantTypeToTitleMapping;
 window.updateParticipantMapping = updateParticipantMapping;
 window.extractClaimIdFromUrl = extractClaimIdFromUrl;
+window.extractTenantFromUrl = extractTenantFromUrl;
 window.encodeBase64 = encodeBase64;
 window.decodeBase64 = decodeBase64;
 window.generateDTMFTone = generateDTMFTone;
